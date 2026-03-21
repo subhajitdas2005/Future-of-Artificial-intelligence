@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Showcase</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body,
+    html,
+    main {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, #1f013d 0%, #030014 65%);
+      font-family: 'Inter', sans-serif;
+    }
+
+    spline-viewer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .minimal-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 2.5rem 4rem;
+      z-index: 10;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 3.5rem;
+      pointer-events: auto;
+    }
+
+    .minimal-header a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      transition: all 0.4s ease;
+      position: relative;
+    }
+
+    .minimal-header a:hover {
+      color: #ffffff;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+    }
+
+    .minimal-header a::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.8);
+      transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .minimal-header a:hover::after {
+      width: 100%;
+    }
+
+    .minimal-header a:not(:first-child)::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: calc(-1.75rem - 1px);
+      transform: translateY(-50%);
+      height: 20px;
+      width: 2px;
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Minimal Hero Typography */
+    .hero-text-container {
+      position: absolute;
+      top: 50%;
+      left: 9%;
+      transform: translateY(-50%);
+      z-index: 5;
+      pointer-events: none;
+      max-width: 600px;
+    }
+
+    .minimal-heading {
+      font-size: 5rem;
+      font-weight: 300;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 2rem;
+      padding-bottom: 0.2em;
+      background: linear-gradient(135deg, #ffffff 40%, #888888 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0;
+    }
+
+    body.ready .minimal-heading {
+      animation: fadeIn 1.5s ease-out forwards;
+    }
+
+    .minimal-subtext {
+      font-size: 1.3rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.6;
+      max-width: 400px;
+      opacity: 0;
+    }
+
+    body.ready .minimal-subtext {
+      animation: fadeIn 1.5s ease-out 0.5s forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+
+    /* Liquid Glare Effect Classes */
+    .interactive-text {
+      pointer-events: auto;
+    }
+
+    .interactive-text.is-hovered .minimal-heading {
+      background: radial-gradient(circle 250px at var(--x) var(--y), #ffffff 0%, #cccccc 30%, #333333 80%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .interactive-text.is-hovered .minimal-subtext {
+      background: radial-gradient(circle 200px at var(--x) var(--y), #ffffff 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.2) 80%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    /* System Status Badge */
+    .system-status {
+      position: absolute;
+      top: 50%;
+      right: 7%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.2rem 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      z-index: 10;
+      opacity: 0;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+
+    body.ready .system-status {
+      animation: fadeInRight 1.5s ease-out 0.8s forwards, floatBox 8s ease-in-out 2.3s infinite;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background-color: #00f3ff;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff;
+      animation: pulse 2s infinite;
+    }
+
+    .status-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .status-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .status-value {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+        box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff;
+      }
+
+      50% {
+        opacity: 0.4;
+        box-shadow: 0 0 4px #00f3ff, 0 0 8px #00f3ff;
+      }
+
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff;
+      }
+    }
+
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translate3d(20px, -50%, 0);
+        filter: blur(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(0, -50%, 0);
+        filter: blur(0);
+      }
+    }
+
+    /* Focus Mode Stylings */
+    .flashlight-beam {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      background: conic-gradient(from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
+          transparent 0deg,
+          rgba(0, 243, 255, 0.25) 35deg,
+          transparent 70deg,
+          transparent 360deg);
+      -webkit-mask-image: radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 6%, black 18%);
+      mask-image: radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 6%, black 18%);
+    }
+
+    body.focus-mode-active .flashlight-beam {
+      opacity: 1;
+    }
+
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    body.focus-mode-active .ui-layer {
+      -webkit-mask-image: conic-gradient(from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
+          rgba(0, 0, 0, 0.02) 0deg,
+          black 35deg,
+          rgba(0, 0, 0, 0.02) 70deg,
+          rgba(0, 0, 0, 0.02) 360deg);
+      mask-image: conic-gradient(from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
+          rgba(0, 0, 0, 0.02) 0deg,
+          black 35deg,
+          rgba(0, 0, 0, 0.02) 70deg,
+          rgba(0, 0, 0, 0.02) 360deg);
+    }
+
+    .focus-mode-btn {
+      position: absolute;
+      top: 2.2rem;
+      left: 4rem;
+      transform: none;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      z-index: 50;
+      transition: all 0.3s ease;
+    }
+
+    .focus-mode-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    }
+
+    body.focus-mode-active .focus-mode-btn {
+      border-color: #00f3ff;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+      color: #00f3ff;
+      background: rgba(0, 243, 255, 0.1);
+    }
+
+    @keyframes floatBox {
+
+      0%,
+      100% {
+        transform: translate3d(0, -50%, 0);
+      }
+
+      50% {
+        transform: translate3d(0, calc(-50% - 15px), 0);
+      }
+    }
+
+    .rotating-text-wrapper {
+      height: 1rem;
+      overflow: hidden;
+      margin-top: 0.2rem;
+    }
+
+    .rotating-text {
+      display: flex;
+      flex-direction: column;
+      animation: rotateText 10s infinite cubic-bezier(0.7, 0, 0.3, 1);
+    }
+
+    .rotating-text span {
+      height: 1rem;
+      display: flex;
+      align-items: center;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes rotateText {
+
+      0%,
+      20% {
+        transform: translateY(0);
+      }
+
+      25%,
+      45% {
+        transform: translateY(-1rem);
+      }
+
+      50%,
+      70% {
+        transform: translateY(-2rem);
+      }
+
+      75%,
+      95% {
+        transform: translateY(-3rem);
+      }
+
+      100% {
+        transform: translateY(-4rem);
+      }
+    }
+
+    /* Loading Screen Styles */
+    #loader-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(3, 0, 20, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.8s cubic-bezier(0.65, 0, 0.35, 1), visibility 0.8s;
+    }
+
+    #loader-wrapper.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .decryptor-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .decryptor-text {
+      font-family: monospace;
+      font-size: 2.5rem;
+      color: #00f3ff;
+      letter-spacing: 8px;
+      font-weight: bold;
+      text-shadow: 0 0 15px rgba(0, 243, 255, 0.8), 0 0 30px rgba(0, 243, 255, 0.4);
+      min-width: 400px;
+      text-align: center;
+    }
+
+    .decryptor-text.locked {
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 40px #00f3ff;
+      animation: lock-flash 0.5s ease-out forwards;
+    }
+
+    .decryptor-subtext {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 4px;
+      animation: pulse-text 1.5s infinite;
+    }
+
+    @keyframes lock-flash {
+      0% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.05); filter: brightness(2); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+
+    @keyframes pulse-text {
+      0%, 100% { opacity: 1; text-shadow: 0 0 10px rgba(0, 243, 255, 0.8); }
+      50% { opacity: 0.4; text-shadow: 0 0 2px rgba(0, 243, 255, 0.3); }
+    }
+  </style>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.51/build/spline-viewer.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const viewer = document.querySelector("spline-viewer");
+      const loaderWrapper = document.getElementById("loader-wrapper");
+      
+      const decryptorText = document.getElementById("decryptor-text");
+      const targetText = "SYSTEM ONLINE";
+      
+      if (viewer) {
+        const hideLogoAndLoader = () => {
+          // Hide Spline Logo
+          if (viewer.shadowRoot) {
+            const logo = viewer.shadowRoot.querySelector("#logo");
+            if (logo) logo.style.display = "none";
+          }
+          
+          if (loaderWrapper && !loaderWrapper.classList.contains("hidden")) {
+            // Stop scrambling and set final text before fading out
+            if (window.scrambleInterval) clearInterval(window.scrambleInterval);
+            if (decryptorText) {
+              decryptorText.innerText = targetText;
+              decryptorText.classList.add("locked");
+            }
+            
+            // Wait just a tiny bit so the user can see "SYSTEM ONLINE" before it disappears
+            setTimeout(() => {
+              loaderWrapper.classList.add("hidden");
+              document.body.classList.add("ready");
+            }, 800);
+          }
+        };
+        
+        // Wait for Spline model to finish loading before hiding the loader
+        viewer.addEventListener("load", hideLogoAndLoader);
+        
+        // Fallback: If Spline viewer fails to fire 'load', clear it after 4 seconds max
+        setTimeout(hideLogoAndLoader, 4000);
+        
+        // Keep scrubbing the logo just in case
+        setInterval(() => {
+          if (viewer.shadowRoot) {
+            const logo = viewer.shadowRoot.querySelector("#logo");
+            if (logo) logo.style.display = "none";
+          }
+        }, 1000);
+      } else {
+        // If no viewer exists at all, just show the page immediately
+        if (loaderWrapper) loaderWrapper.classList.add("hidden");
+        document.body.classList.add("ready");
+      }
+
+      // Liquid Glare Setup
+      const textContainer = document.querySelector(".hero-text-container");
+      if (textContainer) {
+        textContainer.classList.add("interactive-text");
+        textContainer.addEventListener("mousemove", (e) => {
+          const rect = textContainer.getBoundingClientRect();
+          textContainer.style.setProperty("--x", `${e.clientX - rect.left}px`);
+          textContainer.style.setProperty("--y", `${e.clientY - rect.top}px`);
+        });
+        textContainer.addEventListener("mouseenter", () => textContainer.classList.add("is-hovered"));
+        textContainer.addEventListener("mouseleave", () => textContainer.classList.remove("is-hovered"));
+      }
+
+      // Focus Mode Flashlight
+      const focusBtn = document.querySelector(".focus-mode-btn");
+      if (focusBtn) {
+        focusBtn.addEventListener("click", (e) => {
+          document.body.classList.toggle("focus-mode-active");
+          
+          if (document.body.classList.contains("focus-mode-active")) {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight * 0.55;
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+            document.body.style.setProperty("--beam-angle", angle);
+          }
+        });
+      }
+
+      document.addEventListener("mousemove", (e) => {
+        if (document.body.classList.contains("focus-mode-active")) {
+          const centerX = window.innerWidth / 2;
+          const centerY = window.innerHeight * 0.55;
+          const dx = e.clientX - centerX;
+          const dy = e.clientY - centerY;
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+          document.body.style.setProperty("--beam-angle", angle);
+        }
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <div id="loader-wrapper">
+    <div class="decryptor-container">
+      <div class="decryptor-text" id="decryptor-text">SYSTEM BOOT</div>
+      <div class="decryptor-subtext">ESTABLISHING NEURAL LINK...</div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const el = document.getElementById('decryptor-text');
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
+      const target = "SYSTEM ONLINE";
+      
+      // Execute scramble immediately upon HTML parsing
+      window.scrambleInterval = setInterval(() => {
+        let str = "";
+        for(let i=0; i<target.length; i++) {
+          str += target[i] === " " ? " " : chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        el.innerText = str;
+      }, 50);
+    })();
+  </script>
+
+  <main>
+    <spline-viewer style="pointer-events: none;"
+      url="https://prod.spline.design/ytNb29B-70AARpHr/scene.splinecode"></spline-viewer>
+
+    <div class="flashlight-beam"></div>
+
+    <button class="focus-mode-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18h6"></path>
+        <path d="M10 22h4"></path>
+        <path
+          d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14">
+        </path>
+      </svg>
+      Focus Mode
+    </button>
+
+    <div class="ui-layer">
+      <header class="minimal-header">
+        <a href="#machine-learning">Machine Learning</a>
+        <a href="#neural-networks">Neural Networks</a>
+        <a href="#generative-ai">Generative AI</a>
+        <a href="#ai-robotics">AI in Robotics</a>
+        <a href="#future-of-ai">Future of AI</a>
+      </header>
+
+      <div class="hero-text-container">
+        <h1 class="minimal-heading">Experience<br />Intelligence</h1>
+        <p class="minimal-subtext">Designed for the future<br />Beyond code. Beyond logic.</p>
+      </div>
+
+      <div class="system-status">
+        <div class="status-dot"></div>
+        <div class="status-text">
+          <span class="status-label">System State</span>
+          <span class="status-value">Neural Engine Online</span>
+          <div class="rotating-text-wrapper">
+            <div class="rotating-text">
+              <span>Analyzing data...</span>
+              <span>Generating ideas...</span>
+              <span>Building intelligence...</span>
+              <span>Transforming the future...</span>
+              <span>Analyzing data...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> <!-- Close ui-layer -->
+  </main>
+</body>
+
+</html>
