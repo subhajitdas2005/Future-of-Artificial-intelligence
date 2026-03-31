@@ -248,6 +248,95 @@ export default function Home() {
     const nodes = [];
     const connections = [];
     const layers = [4, 6, 8, 6, 4];
+    let isHovering = false;
+    let shapeIndex = 0;
+    let lastShapeSwitch = 0;
+    let angleX = 0;
+    let angleY = 0;
+    const shapes = ['cube', 'pyramid', 'rectangle', 'hexagon'];
+
+    const getTargetPos3D = (index, shape, size) => {
+      switch (shape) {
+        case 'cube': {
+          // 3x3x3 grid (27 nodes) + 1 center
+          if (index < 27) {
+            const ix = (index % 3) - 1;
+            const iy = (Math.floor(index / 3) % 3) - 1;
+            const iz = Math.floor(index / 9) - 1;
+            return { x: ix * (size * 0.4), y: iy * (size * 0.4), z: iz * (size * 0.4) };
+          }
+          return { x: 0, y: 0, z: 0 };
+        }
+        case 'pyramid': {
+          // Layered triangles: 1, 3, 6, 10, 8
+          if (index < 1) return { x: 0, y: -size * 0.5, z: 0 };
+          if (index < 4) {
+             const angle = ((index - 1) / 3) * Math.PI * 2;
+             return { x: Math.cos(angle) * (size * 0.2), y: -size * 0.2, z: Math.sin(angle) * (size * 0.2) };
+          }
+          if (index < 10) {
+             const angle = ((index - 4) / 6) * Math.PI * 2;
+             return { x: Math.cos(angle) * (size * 0.4), y: size * 0.1, z: Math.sin(angle) * (size * 0.4) };
+          }
+          if (index < 20) {
+             const angle = ((index - 10) / 10) * Math.PI * 2;
+             return { x: Math.cos(angle) * (size * 0.6), y: size * 0.4, z: Math.sin(angle) * (size * 0.6) };
+          }
+          const angle = ((index - 20) / 8) * Math.PI * 2;
+          return { x: Math.cos(angle) * (size * 0.4), y: size * 0.2, z: Math.sin(angle) * (size * 0.4) };
+        }
+        case 'rectangle': {
+          // 7x4 grid on a 3D plane with some thickness
+          const row = Math.floor(index / 7);
+          const col = index % 7;
+          const zDepth = (index % 2 === 0 ? 1 : -1) * (size * 0.1);
+          return { 
+            x: (col / 6 - 0.5) * (size * 1.3), 
+            y: (row / 3 - 0.5) * (size * 0.8), 
+            z: zDepth 
+          };
+        }
+        case 'hexagon': {
+          // Two hexagons (6+6) connected in Z-space + 16 internal nodes
+          if (index < 12) {
+            const side = Math.floor(index / 6);
+            const angle = (index % 6 / 6) * Math.PI * 2;
+            const z = (side === 0 ? 0.3 : -0.3) * size;
+            return { x: Math.cos(angle) * (size * 0.5), y: Math.sin(angle) * (size * 0.5), z };
+          } else {
+            const angle = ((index - 12) / 16) * Math.PI * 2;
+            const r = (size * 0.25);
+            return { x: Math.cos(angle) * r, y: Math.sin(angle) * r, z: 0 };
+          }
+        }
+        default: return { x: 0, y: 0, z: 0 };
+      }
+    };
+
+    const project3D = (x, y, z, cx, cy) => {
+      const fov = 500;
+      // Rotate around X and Y axes
+      const cosX = Math.cos(angleX);
+      const sinX = Math.sin(angleX);
+      const cosY = Math.cos(angleY);
+      const sinY = Math.sin(angleY);
+
+      // Rotate Y
+      let x1 = x * cosY - z * sinY;
+      let z1 = x * sinY + z * cosY;
+
+      // Rotate X
+      let y1 = y * cosX - z1 * sinX;
+      let z2 = y * sinX + z1 * cosX;
+
+      const scale = fov / (fov + z2);
+      return {
+        px: x1 * scale + cx,
+        py: y1 * scale + cy,
+        scale,
+        depth: z2
+      };
+    };
 
     function resize() {
       const rect = canvas.parentElement.getBoundingClientRect();
@@ -262,11 +351,18 @@ export default function Home() {
       connections.length = 0;
       const layerSpacing = w / (layers.length + 1);
       layers.forEach((count, li) => {
-        const x = layerSpacing * (li + 1);
+        const x = layerSpacing * (li + 1) - w / 2; // Relative to center
         const nodeSpacing = h / (count + 1);
         for (let ni = 0; ni < count; ni++) {
-          const y = nodeSpacing * (ni + 1);
-          nodes.push({ x, y, layer: li, radius: 4 + Math.random() * 3, pulse: Math.random() * Math.PI * 2 });
+          const y = nodeSpacing * (ni + 1) - h / 2; // Relative to center
+          nodes.push({ 
+            x, y, z: 0,
+            ox: x, oy: y, oz: 0,
+            tx: x, ty: y, tz: 0,
+            layer: li, 
+            radius: 4 + Math.random() * 3, 
+            pulse: Math.random() * Math.PI * 2 
+          });
         }
       });
 
@@ -284,47 +380,103 @@ export default function Home() {
     function draw(time) {
       const w = canvas.width / window.devicePixelRatio;
       const h = canvas.height / window.devicePixelRatio;
+      const size = Math.min(w, h) * 0.6;
       ctx.clearRect(0, 0, w, h);
 
+      if (isHovering) {
+        angleX += 0.002;
+        angleY += 0.003;
+        if (time - lastShapeSwitch > 1500) {
+          shapeIndex = (shapeIndex + 1) % shapes.length;
+          lastShapeSwitch = time;
+        }
+      } else {
+        angleX *= 0.95;
+        angleY *= 0.95;
+      }
+
+      nodes.forEach((node, i) => {
+        const target = isHovering 
+          ? getTargetPos3D(i, shapes[shapeIndex], size)
+          : { x: node.ox, y: node.oy, z: 0 };
+        
+        node.tx = target.x;
+        node.ty = target.y;
+        node.tz = target.z;
+        
+        // Fluid 3D Lerp
+        node.x += (node.tx - node.x) * 0.08;
+        node.y += (node.ty - node.y) * 0.08;
+        node.z += (node.tz - node.z) * 0.08;
+      });
+
+      // Sort nodes for correct depth rendering (optional but better)
+      const projectedNodes = nodes.map((node, i) => ({
+        ...node,
+        ...project3D(node.x, node.y, node.z, w / 2, h / 2),
+        originalIndex: i
+      })).sort((a, b) => b.depth - a.depth);
+
+      const lineOpacity = isHovering ? 0.04 : 0.08;
+
       connections.forEach(conn => {
-        const from = nodes[conn.from];
-        const to = nodes[conn.to];
+        const from = projectedNodes.find(n => n.originalIndex === conn.from);
+        const to = projectedNodes.find(n => n.originalIndex === conn.to);
+        if (!from || !to) return;
+
         ctx.beginPath();
-        ctx.moveTo(from.x, from.y);
-        ctx.lineTo(to.x, to.y);
-        ctx.strokeStyle = 'rgba(0, 243, 255, 0.08)';
-        ctx.lineWidth = 0.5;
+        ctx.moveTo(from.px, from.py);
+        ctx.lineTo(to.px, to.py);
+        const opacity = lineOpacity * Math.min(from.scale, to.scale);
+        ctx.strokeStyle = `rgba(0, 243, 255, ${opacity})`;
+        ctx.lineWidth = 0.5 * Math.min(from.scale, to.scale);
         ctx.stroke();
 
         conn.progress += conn.speed;
         if (conn.progress > 1) conn.progress = 0;
-        const px = from.x + (to.x - from.x) * conn.progress;
-        const py = from.y + (to.y - from.y) * conn.progress;
+        const px = from.px + (to.px - from.px) * conn.progress;
+        const py = from.py + (to.py - from.py) * conn.progress;
         ctx.beginPath();
-        ctx.arc(px, py, 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 243, 255, ${0.6 * (1 - Math.abs(conn.progress - 0.5) * 2)})`;
+        ctx.arc(px, py, 2 * from.scale, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 243, 255, ${0.6 * (1 - Math.abs(conn.progress - 0.5) * 2) * (isHovering ? 0.5 : 1) * from.scale})`;
         ctx.fill();
       });
 
-      nodes.forEach(node => {
+      projectedNodes.forEach(node => {
         const glow = 0.5 + 0.5 * Math.sin(time * 0.002 + node.pulse);
+        const r = node.radius * node.scale;
+        
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 243, 255, ${0.1 + glow * 0.3})`;
+        ctx.arc(node.px, node.py, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 243, 255, ${(0.1 + glow * 0.3) * node.scale})`;
         ctx.fill();
+        
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 243, 255, ${0.5 + glow * 0.5})`;
+        ctx.arc(node.px, node.py, r * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 243, 255, ${(0.5 + glow * 0.5) * node.scale})`;
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius + 4 * glow, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0, 243, 255, ${0.05 * glow})`;
+        ctx.arc(node.px, node.py, r + 4 * glow * node.scale, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 243, 255, ${0.05 * glow * node.scale})`;
         ctx.lineWidth = 1;
         ctx.stroke();
       });
 
       animId = requestAnimationFrame(draw);
+    }
+
+    const parent = canvas.parentElement;
+    const handleMouseEnter = () => { 
+      isHovering = true;
+      shapeIndex = (shapeIndex + 1) % shapes.length;
+      lastShapeSwitch = performance.now();
+    };
+    const handleMouseLeave = () => { isHovering = false; };
+
+    if (parent) {
+      parent.addEventListener('mouseenter', handleMouseEnter);
+      parent.addEventListener('mouseleave', handleMouseLeave);
     }
 
     const canvasObserver = new IntersectionObserver((entries) => {
@@ -355,6 +507,10 @@ export default function Home() {
     return () => {
       canvasObserver.disconnect();
       window.removeEventListener('resize', handleResize);
+      if (parent) {
+        parent.removeEventListener('mouseenter', handleMouseEnter);
+        parent.removeEventListener('mouseleave', handleMouseLeave);
+      }
       if (animId) cancelAnimationFrame(animId);
     };
   }, []);
