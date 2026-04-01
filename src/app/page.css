@@ -6,7 +6,11 @@ body {
   cursor: none;
 }
 
-a, button, [role="button"], .interactive-text, .focus-mode-btn {
+a,
+button,
+[role="button"],
+.interactive-text,
+.focus-mode-btn {
   cursor: none !important;
 }
 
@@ -120,13 +124,31 @@ spline-viewer {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); filter: blur(4px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 
 @keyframes fadeInMobile {
-  from { opacity: 0; transform: translate3d(-50%, 15px, 0); filter: blur(4px); }
-  to { opacity: 1; transform: translate3d(-50%, 0, 0); filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translate3d(-50%, 15px, 0);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+    filter: blur(0);
+  }
 }
 
 /* Cinematic Reveal: Data Assembling Effect */
@@ -134,24 +156,27 @@ spline-viewer {
   opacity: 0;
   will-change: transform, opacity;
   backface-visibility: hidden;
-  transform: translate3d(0, 0, 0); 
-  transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), 
-              transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
-              filter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-[data-reveal="up"] { 
-  transform: translate3d(0, 30px, 0); 
+[data-reveal="up"] {
+  transform: translate3d(0, 30px, 0);
   filter: blur(4px);
 }
-[data-reveal="scale"] { 
-  transform: scale(0.94) translate3d(0, 0, 0); 
+
+[data-reveal="scale"] {
+  transform: scale(0.94) translate3d(0, 0, 0);
   filter: blur(4px);
 }
+
 [data-reveal="right"] {
   transform: translate3d(40px, 0, 0);
   filter: blur(8px);
 }
+
 [data-reveal].reveal-active {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1) rotateX(0);
@@ -159,12 +184,13 @@ spline-viewer {
 }
 
 /* Cinematic Multi-Directional Reveal */
-[data-reveal="up"] { 
-  transform: translate3d(0, 60px, 0) scale(0.96); 
+[data-reveal="up"] {
+  transform: translate3d(0, 60px, 0) scale(0.96);
   filter: blur(8px);
 }
-[data-reveal="down"] { 
-  transform: translate3d(0, -60px, 0) scale(0.96); 
+
+[data-reveal="down"] {
+  transform: translate3d(0, -60px, 0) scale(0.96);
   filter: blur(8px);
 }
 
@@ -174,13 +200,20 @@ spline-viewer {
 }
 
 /* Stagger Root for Containers */
-.stagger-root > * {
-  --reveal-delay: 0ms; /* Default */
+.stagger-root>* {
+  --reveal-delay: 0ms;
+  /* Default */
 }
 
 /* Accessibility: Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal], .mask-reveal, .ml-bg-orb, .ml-section::before, .ml-card, .ml-neural-canvas {
+
+  [data-reveal],
+  .mask-reveal,
+  .ml-bg-orb,
+  .ml-section::before,
+  .ml-card,
+  .ml-neural-canvas {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -190,7 +223,8 @@ spline-viewer {
     will-change: auto !important;
   }
 
-  .ml-header, .ml-grid {
+  .ml-header,
+  .ml-grid {
     opacity: 1 !important;
   }
 }
@@ -201,8 +235,8 @@ spline-viewer {
   opacity: 0;
   transform: translateY(40px) scale(0.98);
   transition: clip-path 1.2s cubic-bezier(0.19, 1, 0.22, 1),
-              opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1),
-              transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+    opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1),
+    transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
   will-change: clip-path, opacity, transform;
 }
 
@@ -283,31 +317,52 @@ spline-viewer {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff; }
-  50% { opacity: 0.4; box-shadow: 0 0 4px #00f3ff, 0 0 8px #00f3ff; }
-  100% { opacity: 1; box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff; }
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff;
+  }
+
+  50% {
+    opacity: 0.4;
+    box-shadow: 0 0 4px #00f3ff, 0 0 8px #00f3ff;
+  }
+
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 12px #00f3ff, 0 0 24px #00f3ff;
+  }
 }
 
 @keyframes fadeInRight {
-  from { opacity: 0; transform: translate3d(20px, -50%, 0); filter: blur(5px); }
-  to { opacity: 1; transform: translate3d(0, -50%, 0); filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translate3d(20px, -50%, 0);
+    filter: blur(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, -50%, 0);
+    filter: blur(0);
+  }
 }
 
 /* Focus Mode Stylings */
 .flashlight-beam {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 1;
   opacity: 0;
   transition: opacity 0.5s ease;
-  background: conic-gradient(
-    from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
-    transparent 0deg,
-    rgba(0, 243, 255, 0.25) 35deg,
-    transparent 70deg,
-    transparent 360deg
-  );
+  background: conic-gradient(from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
+      transparent 0deg,
+      rgba(0, 243, 255, 0.25) 35deg,
+      transparent 70deg,
+      transparent 360deg);
   -webkit-mask-image: radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 6%, black 18%);
   mask-image: radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 6%, black 18%);
 }
@@ -318,26 +373,25 @@ body.focus-mode-active .flashlight-beam {
 
 .ui-layer {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 5;
 }
 
 body.focus-mode-active .ui-layer {
-  -webkit-mask-image: conic-gradient(
-    from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
-    rgba(0,0,0,0.02) 0deg,
-    black 35deg,
-    rgba(0,0,0,0.02) 70deg,
-    rgba(0,0,0,0.02) 360deg
-  );
-  mask-image: conic-gradient(
-    from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
-    rgba(0,0,0,0.02) 0deg,
-    black 35deg,
-    rgba(0,0,0,0.02) 70deg,
-    rgba(0,0,0,0.02) 360deg
-  );
+  -webkit-mask-image: conic-gradient(from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
+      rgba(0, 0, 0, 0.02) 0deg,
+      black 35deg,
+      rgba(0, 0, 0, 0.02) 70deg,
+      rgba(0, 0, 0, 0.02) 360deg);
+  mask-image: conic-gradient(from calc(var(--beam-angle, 0) * 1deg - 35deg) at 50% 55%,
+      rgba(0, 0, 0, 0.02) 0deg,
+      black 35deg,
+      rgba(0, 0, 0, 0.02) 70deg,
+      rgba(0, 0, 0, 0.02) 360deg);
 }
 
 .focus-mode-btn {
@@ -376,8 +430,15 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 @keyframes floatBox {
-  0%, 100% { transform: translate3d(0, -50%, 0); }
-  50% { transform: translate3d(0, calc(-50% - 15px), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(0, -50%, 0);
+  }
+
+  50% {
+    transform: translate3d(0, calc(-50% - 15px), 0);
+  }
 }
 
 :root {
@@ -414,11 +475,30 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 @keyframes rotateText {
-  0%, 20% { transform: translateY(0); }
-  25%, 45% { transform: translateY(calc(var(--status-h) * -1)); }
-  50%, 70% { transform: translateY(calc(var(--status-h) * -2)); }
-  75%, 95% { transform: translateY(calc(var(--status-h) * -3)); }
-  100% { transform: translateY(calc(var(--status-h) * -4)); }
+
+  0%,
+  20% {
+    transform: translateY(0);
+  }
+
+  25%,
+  45% {
+    transform: translateY(calc(var(--status-h) * -1));
+  }
+
+  50%,
+  70% {
+    transform: translateY(calc(var(--status-h) * -2));
+  }
+
+  75%,
+  95% {
+    transform: translateY(calc(var(--status-h) * -3));
+  }
+
+  100% {
+    transform: translateY(calc(var(--status-h) * -4));
+  }
 }
 
 /* Loading Screen Styles */
@@ -530,7 +610,8 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 /* === MACHINE LEARNING & NEURAL NETWORK SECTIONS === */
-.ml-section, .nn-section {
+.ml-section,
+.nn-section {
   position: relative;
   min-height: 100vh;
   width: 100%;
@@ -544,7 +625,8 @@ body.focus-mode-active .focus-mode-btn {
   z-index: 1;
   scroll-snap-align: start;
   scroll-margin-top: 2px;
-  contain: paint; /* Isolate rendering */
+  contain: paint;
+  /* Isolate rendering */
 }
 
 .ml-container {
@@ -571,7 +653,8 @@ body.focus-mode-active .focus-mode-btn {
   transform: translate3d(0, 0, 0);
 }
 
-.ml-section::after, .nn-section::after {
+.ml-section::after,
+.nn-section::after {
   content: '';
   position: absolute;
   top: 0;
@@ -584,7 +667,8 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 /* Cinematic Parallax Grid */
-.ml-section::before, .nn-section::before {
+.ml-section::before,
+.nn-section::before {
   content: '';
   position: absolute;
   top: -20%;
@@ -598,7 +682,7 @@ body.focus-mode-active .focus-mode-btn {
   pointer-events: none;
   will-change: transform;
   z-index: 0;
-  
+
   /* Hardware-Accelerated Parallax via Scroll Timeline */
   animation: grid-parallax linear both;
   animation-timeline: view();
@@ -606,20 +690,33 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 @keyframes grid-parallax {
-  0% { transform: translate3d(0, -60px, 0); }
-  100% { transform: translate3d(0, 60px, 0); }
+  0% {
+    transform: translate3d(0, -60px, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 60px, 0);
+  }
 }
 
 @keyframes gridPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Parallax-Ready Orbs (Managed by JS variables for 3D depth) */
 .ml-bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px); /* Reduced blur for performance */
+  filter: blur(60px);
+  /* Reduced blur for performance */
   opacity: 0.12;
   pointer-events: none;
   will-change: transform;
@@ -629,35 +726,48 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 @keyframes orb-parallax {
-  0% { transform: translate3d(0, calc(var(--parallax-offset, 40px) * -1), 0); }
-  100% { transform: translate3d(0, var(--parallax-offset, 40px), 0); }
+  0% {
+    transform: translate3d(0, calc(var(--parallax-offset, 40px) * -1), 0);
+  }
+
+  100% {
+    transform: translate3d(0, var(--parallax-offset, 40px), 0);
+  }
 }
 
 .ml-bg-orb.orb-1 {
-  width: 500px; height: 500px;
+  width: 500px;
+  height: 500px;
   background: radial-gradient(circle, #6c00ff 0%, transparent 70%);
-  top: -10%; right: -10%;
+  top: -10%;
+  right: -10%;
   --parallax-offset: 80px;
 }
 
 .ml-bg-orb.orb-2 {
-  width: 400px; height: 400px;
+  width: 400px;
+  height: 400px;
   background: radial-gradient(circle, #00f3ff 0%, transparent 70%);
-  bottom: 5%; left: -10%;
+  bottom: 5%;
+  left: -10%;
   --parallax-offset: -60px;
 }
 
 .ml-bg-orb.orb-3 {
-  width: 350px; height: 350px;
+  width: 350px;
+  height: 350px;
   background: radial-gradient(circle, #ff006e 0%, transparent 70%);
-  top: 40%; left: 35%;
+  top: 40%;
+  left: 35%;
   --parallax-offset: 40px;
 }
 
 .ml-bg-orb.orb-4 {
-  width: 450px; height: 450px;
+  width: 450px;
+  height: 450px;
   background: radial-gradient(circle, #00f3ff 0%, transparent 70%);
-  bottom: -10%; right: 10%;
+  bottom: -10%;
+  right: 10%;
   --parallax-offset: 100px;
   opacity: 0.08;
 }
@@ -745,24 +855,25 @@ body.focus-mode-active .focus-mode-btn {
 
 .ml-card {
   background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px); /* Slightly reduced for mobile perf */
+  backdrop-filter: blur(12px);
+  /* Slightly reduced for mobile perf */
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 24px;
   padding: 3rem 2.2rem;
   position: relative;
   overflow: hidden;
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), 
-              border-color 0.4s ease,
-              background 0.4s ease,
-              box-shadow 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.4s ease,
+    background 0.4s ease,
+    box-shadow 0.4s ease;
   will-change: transform;
-  transform: translate3d(0, 0, 0); 
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   z-index: 1;
 }
 
-.ml-card > * {
+.ml-card>* {
   position: relative;
   z-index: 1;
 }
@@ -815,8 +926,8 @@ body.focus-mode-active .focus-mode-btn {
   align-items: center;
   justify-content: center;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, var(--card-accent-bg, rgba(0,243,255,0.1)), transparent);
-  border: 1px solid var(--card-accent-border, rgba(0,243,255,0.15));
+  background: linear-gradient(135deg, var(--card-accent-bg, rgba(0, 243, 255, 0.1)), transparent);
+  border: 1px solid var(--card-accent-border, rgba(0, 243, 255, 0.15));
 }
 
 .ml-card-icon svg {
@@ -847,7 +958,8 @@ body.focus-mode-active .focus-mode-btn {
 
 /* Neural Network Visualization */
 .nn-section .ml-visualization {
-  margin-top: 0; /* Reset for independent section */
+  margin-top: 0;
+  /* Reset for independent section */
   min-height: 100vh;
 }
 
@@ -856,10 +968,10 @@ body.focus-mode-active .focus-mode-btn {
   z-index: 2;
   width: 100%;
   max-width: 1200px;
-  margin: 8rem auto;
+  margin: clamp(2rem, 6vw, 8rem) auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  gap: clamp(1.5rem, 4vw, 4rem);
   align-items: center;
 }
 
@@ -872,7 +984,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-viz-title {
-  font-size: 2.5rem;
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
   font-weight: 300;
   letter-spacing: -1px;
   color: #ffffff;
@@ -891,7 +1003,7 @@ body.focus-mode-active .focus-mode-btn {
 /* Stats Row */
 .ml-stats {
   display: flex;
-  gap: 2.5rem;
+  gap: clamp(1rem, 3vw, 2.5rem);
   margin-top: 1rem;
 }
 
@@ -899,10 +1011,12 @@ body.focus-mode-active .focus-mode-btn {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  min-width: 0;
+  /* Prevent flex overflow */
 }
 
 .ml-stat-value {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
   font-weight: 600;
   background: linear-gradient(135deg, #00f3ff, #b8b8ff);
   -webkit-background-clip: text;
@@ -911,10 +1025,11 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-stat-label {
-  font-size: 0.75rem;
+  font-size: clamp(0.6rem, 1.8vw, 0.75rem);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: clamp(0.5px, 0.3vw, 1.5px);
   color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
 }
 
 /* === TRULY INSTANT HARDWARE CURSOR === */
@@ -923,13 +1038,23 @@ body {
 }
 
 /* Hover state for interactive elements */
-a, button, [role="button"], .interactive-text, .focus-mode-btn {
+a,
+button,
+[role="button"],
+.interactive-text,
+.focus-mode-btn {
   cursor: url("data:image/svg+xml,%3Csvg width='23' height='23' viewBox='0 0 23 23' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 2V14.09L5.14 10.95L7.21 15.59L8.93 14.82L6.85 10.17H11L2 2Z' stroke='%2300f3ff' stroke-width='1.2' stroke-linejoin='round' fill='rgba(0, 243, 255, 0.1)'/%3E%3C/svg%3E") 2 2, pointer !important;
 }
 
 /* Responsive: Reset for touch devices */
 @media (max-width: 1024px) {
-  body, a, button, [role="button"], .interactive-text, .focus-mode-btn {
+
+  body,
+  a,
+  button,
+  [role="button"],
+  .interactive-text,
+  .focus-mode-btn {
     cursor: auto !important;
   }
 }
@@ -938,10 +1063,16 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
   .custom-cursor-container {
     display: none;
   }
+
   body {
     cursor: auto;
   }
-  a, button, [role="button"], .interactive-text, .focus-mode-btn {
+
+  a,
+  button,
+  [role="button"],
+  .interactive-text,
+  .focus-mode-btn {
     cursor: pointer !important;
   }
 }
@@ -950,11 +1081,13 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
 .ml-neural-canvas {
   position: relative;
   width: 100%;
+  max-width: 100%;
   aspect-ratio: 1.1;
   background: radial-gradient(circle at center, rgba(31, 1, 61, 0.2) 0%, transparent 70%);
   border-radius: 50%;
   will-change: transform, opacity;
-  
+  contain: layout style;
+
   /* Use scroll timeline for cinematic scale pulse */
   animation: viz-pulse linear both;
   animation-timeline: view();
@@ -962,8 +1095,15 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
 }
 
 @keyframes viz-pulse {
-  0%, 100% { transform: scale(0.92); }
-  50% { transform: scale(1.02); }
+
+  0%,
+  100% {
+    transform: scale(0.92);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
 }
 
 .ml-neural-canvas canvas {
@@ -979,38 +1119,71 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
   .minimal-header {
     padding: 1.5rem 2rem;
     gap: 2rem;
-    top: 2.5rem; /* Slightly more upward for tablet */
+    top: 2.5rem;
+    /* Slightly more upward for tablet */
   }
+
   .hero-text-container {
     left: 7%;
     max-width: 500px;
   }
+
   .minimal-heading {
     font-size: 3.5rem;
   }
+
   .system-status {
     right: 5%;
     padding: 1rem 1.4rem;
   }
+
   .focus-mode-btn {
-    display: none; /* Removed for tablets as requested */
+    display: none;
+    /* Removed for tablets as requested */
   }
+
   .ml-grid {
     grid-template-columns: 1fr;
     max-width: 500px;
   }
+
   .ml-visualization {
     grid-template-columns: 1fr;
     text-align: center;
   }
+
   .ml-stats {
     justify-content: center;
   }
+
   .ml-title {
     font-size: 2.8rem;
   }
-  .ml-section {
-    padding: 6rem 2rem 4rem;
+
+  .ml-section,
+  .nn-section {
+    padding: 4rem 1.5rem;
+  }
+
+  .ml-visualization {
+    margin: 3rem auto;
+    gap: 2rem;
+  }
+
+  .nn-section {
+    justify-content: center;
+    /* Vertically center the content */
+  }
+
+  .nn-section .ml-visualization {
+    min-height: auto;
+    margin: 0 auto;
+    padding: 1rem 0;
+  }
+
+  .ml-neural-canvas {
+    max-width: min(400px, 80vw);
+    margin: 0 auto;
   }
 }
 
@@ -1020,19 +1193,24 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.8rem 1.2rem;
-    top: 1.8rem; /* Final subtle upward shift from 2.2rem */
+    top: 1.8rem;
+    /* Final subtle upward shift from 2.2rem */
   }
+
   .minimal-header a {
     font-size: 0.8rem;
   }
+
   .minimal-header a:not(:first-child)::before {
     display: none;
   }
-  
+
   /* Horizontal centering fix for the Spline robot model */
   .spline-container spline-viewer {
-    width: 110% !important; /* Increased width to cover the gap caused by translateX */
-    transform: translateX(-8.8%); /* Final subtle shift to the left for perfect visual balance */
+    width: 110% !important;
+    /* Increased width to cover the gap caused by translateX */
+    transform: translateX(-8.8%);
+    /* Final subtle shift to the left for perfect visual balance */
     pointer-events: none;
     user-select: none;
   }
@@ -1043,33 +1221,41 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
     max-width: 100%;
     text-align: center;
     padding: 0 1.5rem;
-    top: 28%; /* Shifted slightly upward from 32% for optimal mobile balance */
+    top: 28%;
+    /* Shifted slightly upward from 32% for optimal mobile balance */
     display: flex;
     flex-direction: column;
     align-items: center;
   }
+
   .minimal-heading {
-    font-size: 2.2rem; /* Reduced from 2.8rem */
+    font-size: 2.2rem;
+    /* Reduced from 2.8rem */
     margin-bottom: 1rem;
     line-height: 1.2;
   }
+
   .minimal-subtext {
-    font-size: 0.95rem; /* Reduced from 1.1rem */
+    font-size: 0.95rem;
+    /* Reduced from 1.1rem */
     margin: 0 auto;
     max-width: 280px;
   }
+
   .system-status {
     left: 50%;
-    top: auto; /* REMOVE DESKTOP CENTER-LOCK */
+    top: auto;
+    /* REMOVE DESKTOP CENTER-LOCK */
     right: auto;
-    bottom: 4%; /* Move to bottom as requested */
+    bottom: 4%;
+    /* Move to bottom as requested */
     transform: translateX(-50%);
     animation: fadeInMobile 1.2s ease-out 0.8s forwards;
     padding: 0.6rem 1.2rem;
     width: fit-content;
     min-width: 220px;
     max-width: 85%;
-    max-height: 100px; 
+    max-height: 100px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1108,8 +1294,10 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
     font-size: 0.7rem;
     justify-content: center;
   }
+
   .focus-mode-btn {
-    display: none; /* Removed for mobile as requested */
+    display: none;
+    /* Removed for mobile as requested */
   }
 
   /* Disable Focus Mode visual effects (mask/flashlight) on mobile/tablet viewports */
@@ -1119,15 +1307,112 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
     mask-image: none !important;
     -webkit-mask-image: none !important;
   }
+
   .ml-title {
     font-size: 2rem;
   }
+
   .ml-viz-title {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
   }
+
+  .nn-section {
+    padding: 1rem 1rem;
+    justify-content: center;
+    /* Vertically center content in full viewport */
+  }
+
+  .nn-section .ml-visualization {
+    min-height: auto;
+    margin: 0 auto;
+    gap: 1.2rem;
+    padding: 0;
+  }
+
+  .ml-neural-canvas {
+    aspect-ratio: 1;
+    max-width: min(280px, 75vw);
+    margin: 0 auto;
+  }
+
+  .ml-neural-canvas canvas {
+    filter: drop-shadow(0 0 15px rgba(0, 243, 255, 0.1));
+    /* Lighter glow for mobile perf */
+  }
+
+  .ml-stats {
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ml-stat-value {
+    font-size: 1.4rem;
+  }
+
+  .ml-stat-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.5px;
+  }
+
+  .ml-viz-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0 0 1.5rem;
+  }
+
+  .ml-viz-label {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+  }
+
   .decryptor-text {
     font-size: 1.5rem;
     min-width: 280px;
     letter-spacing: 4px;
+  }
+
+  /* Disable hover transforms on touch — prevent tap jank */
+  .ml-card:hover {
+    transform: none;
+  }
+}
+
+/* Ultra-narrow devices (iPhone SE, Galaxy Fold) */
+@media (max-width: 380px) {
+  .nn-section {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .ml-neural-canvas {
+    max-width: 220px;
+  }
+
+  .ml-stats {
+    gap: 0.5rem;
+  }
+
+  .ml-stat {
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 70px;
+  }
+
+  .ml-stat-value {
+    font-size: 1.2rem;
+  }
+
+  .ml-stat-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.3px;
+  }
+
+  .ml-viz-title {
+    font-size: 1.4rem;
+  }
+
+  .ml-viz-desc {
+    font-size: 0.82rem;
+    padding: 0 0.25rem;
   }
 }

@@ -161,9 +161,9 @@ export default function Home() {
           entry.target.classList.remove('reveal-active');
         }
       });
-    }, { 
+    }, {
       threshold: 0.05,
-      rootMargin: '0px 0px -10% 0px' 
+      rootMargin: '0px 0px -10% 0px'
     });
 
     // Initial setup for staggered elements
@@ -204,7 +204,7 @@ export default function Home() {
           entry.target.querySelectorAll('[data-count]').forEach(el => {
             if (el.dataset.running) return;
             el.dataset.running = 'true';
-            
+
             const target = parseFloat(el.getAttribute('data-count'));
             const isFloat = target % 1 !== 0;
             const duration = 1500; // Snappier count
@@ -271,16 +271,16 @@ export default function Home() {
           // Layered triangles: 1, 3, 6, 10, 8
           if (index < 1) return { x: 0, y: -size * 0.5, z: 0 };
           if (index < 4) {
-             const angle = ((index - 1) / 3) * Math.PI * 2;
-             return { x: Math.cos(angle) * (size * 0.2), y: -size * 0.2, z: Math.sin(angle) * (size * 0.2) };
+            const angle = ((index - 1) / 3) * Math.PI * 2;
+            return { x: Math.cos(angle) * (size * 0.2), y: -size * 0.2, z: Math.sin(angle) * (size * 0.2) };
           }
           if (index < 10) {
-             const angle = ((index - 4) / 6) * Math.PI * 2;
-             return { x: Math.cos(angle) * (size * 0.4), y: size * 0.1, z: Math.sin(angle) * (size * 0.4) };
+            const angle = ((index - 4) / 6) * Math.PI * 2;
+            return { x: Math.cos(angle) * (size * 0.4), y: size * 0.1, z: Math.sin(angle) * (size * 0.4) };
           }
           if (index < 20) {
-             const angle = ((index - 10) / 10) * Math.PI * 2;
-             return { x: Math.cos(angle) * (size * 0.6), y: size * 0.4, z: Math.sin(angle) * (size * 0.6) };
+            const angle = ((index - 10) / 10) * Math.PI * 2;
+            return { x: Math.cos(angle) * (size * 0.6), y: size * 0.4, z: Math.sin(angle) * (size * 0.6) };
           }
           const angle = ((index - 20) / 8) * Math.PI * 2;
           return { x: Math.cos(angle) * (size * 0.4), y: size * 0.2, z: Math.sin(angle) * (size * 0.4) };
@@ -290,10 +290,10 @@ export default function Home() {
           const row = Math.floor(index / 7);
           const col = index % 7;
           const zDepth = (index % 2 === 0 ? 1 : -1) * (size * 0.1);
-          return { 
-            x: (col / 6 - 0.5) * (size * 1.3), 
-            y: (row / 3 - 0.5) * (size * 0.8), 
-            z: zDepth 
+          return {
+            x: (col / 6 - 0.5) * (size * 1.3),
+            y: (row / 3 - 0.5) * (size * 0.8),
+            z: zDepth
           };
         }
         case 'hexagon': {
@@ -355,13 +355,13 @@ export default function Home() {
         const nodeSpacing = h / (count + 1);
         for (let ni = 0; ni < count; ni++) {
           const y = nodeSpacing * (ni + 1) - h / 2; // Relative to center
-          nodes.push({ 
+          nodes.push({
             x, y, z: 0,
             ox: x, oy: y, oz: 0,
             tx: x, ty: y, tz: 0,
-            layer: li, 
-            radius: 4 + Math.random() * 3, 
-            pulse: Math.random() * Math.PI * 2 
+            layer: li,
+            radius: 4 + Math.random() * 3,
+            pulse: Math.random() * Math.PI * 2
           });
         }
       });
@@ -396,14 +396,14 @@ export default function Home() {
       }
 
       nodes.forEach((node, i) => {
-        const target = isHovering 
+        const target = isHovering
           ? getTargetPos3D(i, shapes[shapeIndex], size)
           : { x: node.ox, y: node.oy, z: 0 };
-        
+
         node.tx = target.x;
         node.ty = target.y;
         node.tz = target.z;
-        
+
         // Fluid 3D Lerp
         node.x += (node.tx - node.x) * 0.08;
         node.y += (node.ty - node.y) * 0.08;
@@ -445,12 +445,12 @@ export default function Home() {
       projectedNodes.forEach(node => {
         const glow = 0.5 + 0.5 * Math.sin(time * 0.002 + node.pulse);
         const r = node.radius * node.scale;
-        
+
         ctx.beginPath();
         ctx.arc(node.px, node.py, r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(0, 243, 255, ${(0.1 + glow * 0.3) * node.scale})`;
         ctx.fill();
-        
+
         ctx.beginPath();
         ctx.arc(node.px, node.py, r * 0.5, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(0, 243, 255, ${(0.5 + glow * 0.5) * node.scale})`;
@@ -467,7 +467,7 @@ export default function Home() {
     }
 
     const parent = canvas.parentElement;
-    const handleMouseEnter = () => { 
+    const handleMouseEnter = () => {
       isHovering = true;
       shapeIndex = (shapeIndex + 1) % shapes.length;
       lastShapeSwitch = performance.now();
