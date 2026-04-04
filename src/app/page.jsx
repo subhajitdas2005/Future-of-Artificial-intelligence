@@ -255,6 +255,9 @@ export default function Home() {
     let angleY = 0;
     const shapes = ['cube', 'pyramid', 'rectangle', 'hexagon'];
 
+    // ─── Device Capability Detection (early, so draw() can reference it) ──
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+
     const getTargetPos3D = (index, shape, size) => {
       switch (shape) {
         case 'cube': {
@@ -386,7 +389,8 @@ export default function Home() {
       if (isHovering) {
         angleX += 0.002;
         angleY += 0.003;
-        if (time - lastShapeSwitch > 1500) {
+        // Auto-cycle shapes on desktop only; mobile waits for manual taps
+        if (!isTouchDevice && time - lastShapeSwitch > 1500) {
           shapeIndex = (shapeIndex + 1) % shapes.length;
           lastShapeSwitch = time;
         }
@@ -467,6 +471,10 @@ export default function Home() {
     }
 
     const parent = canvas.parentElement;
+
+    // (isTouchDevice already detected at top of useEffect)
+
+    // ─── Desktop: Hover to Transform (unchanged) ──────────────────
     const handleMouseEnter = () => {
       isHovering = true;
       shapeIndex = (shapeIndex + 1) % shapes.length;
@@ -474,11 +482,37 @@ export default function Home() {
     };
     const handleMouseLeave = () => { isHovering = false; };
 
+    // ─── Mobile: Tap to Transform ──────────────────────────────────
+    // Every tap advances to the next shape and keeps 3D rotation active.
+    // No toggle — once tapped, the canvas stays in "transformed" mode
+    // and each subsequent tap just cycles the shape forward.
+    const handleMobileTap = (e) => {
+      // Prevent ghost-click double-fire on touch devices
+      if (e.type === 'touchstart') e.preventDefault();
+
+      // Always keep hovering ON so rotation + shape rendering continues
+      isHovering = true;
+      // Advance to the next shape on every tap
+      shapeIndex = (shapeIndex + 1) % shapes.length;
+      lastShapeSwitch = performance.now();
+    };
+
+    // ─── Bind the correct handler set per device type ─────────────
     if (parent) {
-      parent.addEventListener('mouseenter', handleMouseEnter);
-      parent.addEventListener('mouseleave', handleMouseLeave);
+      if (isTouchDevice) {
+        // Mobile path: use touchstart (primary) + click (fallback for
+        // devices that report coarse but still fire click events).
+        // touchstart fires first; preventDefault stops the click duplicate.
+        parent.addEventListener('touchstart', handleMobileTap, { passive: false });
+        parent.addEventListener('click', handleMobileTap);
+      } else {
+        // Desktop path: classic hover behaviour
+        parent.addEventListener('mouseenter', handleMouseEnter);
+        parent.addEventListener('mouseleave', handleMouseLeave);
+      }
     }
 
+    // ─── Visibility Observer (start / pause animation) ────────────
     const canvasObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -487,6 +521,9 @@ export default function Home() {
         } else {
           cancelAnimationFrame(animId);
           animId = null;
+          // Safety: reset hover state when canvas scrolls out of view
+          // so mobile doesn't get stuck in "hovering" mode.
+          if (isTouchDevice) isHovering = false;
         }
       });
     }, { threshold: 0.1 });
@@ -504,12 +541,18 @@ export default function Home() {
     };
     window.addEventListener('resize', handleResize, { passive: true });
 
+    // ─── Cleanup ──────────────────────────────────────────────────
     return () => {
       canvasObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       if (parent) {
-        parent.removeEventListener('mouseenter', handleMouseEnter);
-        parent.removeEventListener('mouseleave', handleMouseLeave);
+        if (isTouchDevice) {
+          parent.removeEventListener('touchstart', handleMobileTap);
+          parent.removeEventListener('click', handleMobileTap);
+        } else {
+          parent.removeEventListener('mouseenter', handleMouseEnter);
+          parent.removeEventListener('mouseleave', handleMouseLeave);
+        }
       }
       if (animId) cancelAnimationFrame(animId);
     };
