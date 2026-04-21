@@ -218,8 +218,11 @@ spline-viewer {
   .mask-reveal,
   .ml-bg-orb,
   .ml-section::before,
-  .ml-card,
-  .ml-neural-canvas {
+  .ml-flow-node,
+  .ml-engine-node,
+  .ml-neural-canvas,
+  .flow-line,
+  .flow-pulse {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -230,7 +233,7 @@ spline-viewer {
   }
 
   .ml-header,
-  .ml-grid {
+  .ml-flowchart {
     opacity: 1 !important;
   }
 }
@@ -631,12 +634,11 @@ body.focus-mode-active .focus-mode-btn {
   flex-direction: column;
   align-items: center;
   overflow: hidden;
-  margin-top: -2px;
+  margin-top: -5px; /* Deep overlap to hide seams */
   z-index: 1;
   scroll-snap-align: start;
-  scroll-margin-top: 2px;
-  contain: paint;
-  /* Isolate rendering */
+  scroll-margin-top: 5px;
+  /* Removed contain: paint to prevent sub-pixel edge artifacts */
 }
 
 .ml-container {
@@ -663,8 +665,7 @@ body.focus-mode-active .focus-mode-btn {
   transform: translate3d(0, 0, 0);
 }
 
-.ml-section::after,
-.nn-section::after {
+.ml-section::after {
   content: '';
   position: absolute;
   top: 0;
@@ -674,6 +675,19 @@ body.focus-mode-active .focus-mode-btn {
   background: linear-gradient(to bottom, #030014 0%, transparent 100%);
   z-index: 1;
   pointer-events: none;
+}
+
+.nn-section::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(to bottom, #030014 0%, transparent 100%);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.6; /* Subtle blend so the two sections merge smoothly */
 }
 
 /* Cinematic Parallax Grid */
@@ -692,21 +706,9 @@ body.focus-mode-active .focus-mode-btn {
   pointer-events: none;
   will-change: transform;
   z-index: 0;
-
-  /* Hardware-Accelerated Parallax via Scroll Timeline */
-  animation: grid-parallax linear both;
-  animation-timeline: view();
-  animation-range: entry 0% exit 100%;
-}
-
-@keyframes grid-parallax {
-  0% {
-    transform: translate3d(0, -60px, 0);
-  }
-
-  100% {
-    transform: translate3d(0, 60px, 0);
-  }
+  /* Fade grid at top/bottom edges so sections blend seamlessly */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 }
 
 @keyframes gridPulse {
@@ -730,19 +732,6 @@ body.focus-mode-active .focus-mode-btn {
   opacity: 0.12;
   pointer-events: none;
   will-change: transform;
-  animation: orb-parallax linear both;
-  animation-timeline: view();
-  animation-range: entry 0% exit 100%;
-}
-
-@keyframes orb-parallax {
-  0% {
-    transform: translate3d(0, calc(var(--parallax-offset, 40px) * -1), 0);
-  }
-
-  100% {
-    transform: translate3d(0, var(--parallax-offset, 40px), 0);
-  }
 }
 
 .ml-bg-orb.orb-1 {
@@ -817,8 +806,8 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-title {
-  font-family: var(--font-jersey-25), sans-serif;
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-family: var(--font-aldrich), sans-serif;
+  font-size: clamp(2.5rem, 7vw, 3.5rem);
   font-weight: 400;
   letter-spacing: 0px;
   line-height: 1;
@@ -855,121 +844,334 @@ body.focus-mode-active .focus-mode-btn {
   transform: translateY(0);
 }
 
-/* Feature Cards Grid */
-.ml-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+/* === FLOWCHART ARCHITECTURE === */
+.ml-flowchart {
   position: relative;
+  width: 100%;
+  max-width: 1100px;
+  min-height: 500px;
+  margin: 0 auto;
   z-index: 2;
-  max-width: 1200px;
-  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
 }
 
-.ml-card {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-  /* Slightly reduced for mobile perf */
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 24px;
-  padding: 3rem 2.2rem;
+/* SVG Connection Paths */
+.ml-flow-paths {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  /* Hardware acceleration for smooth scrolling with SVG animations */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.flow-line {
+  opacity: 0;
+  transition: opacity 0.5s ease, stroke 0.5s ease, stroke-width 0.5s ease;
+  stroke-dasharray: 6 4;
+  stroke-dashoffset: 0;
+  animation: flow-dash 20s linear infinite;
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -200;
+  }
+}
+
+/* Hover sync: reveal and brighten the matching items */
+.ml-flowchart[data-active-node="supervised"] .flow-line--supervised,
+.ml-flowchart[data-active-node="supervised"] .flow-pulse--supervised,
+.ml-flowchart[data-active-node="unsupervised"] .flow-line--unsupervised,
+.ml-flowchart[data-active-node="unsupervised"] .flow-pulse--unsupervised,
+.ml-flowchart[data-active-node="reinforcement"] .flow-line--reinforcement,
+.ml-flowchart[data-active-node="reinforcement"] .flow-pulse--reinforcement {
+  opacity: 1 !important;
+  stroke-opacity: 1 !important;
+}
+
+/* Ensure the lines have color even when revealed from opacity 0 */
+.flow-line--supervised { stroke: rgba(0, 243, 255, 0.5); stroke-width: 3; }
+.flow-line--unsupervised { stroke: rgba(181, 108, 255, 0.5); stroke-width: 3; }
+.flow-line--reinforcement { stroke: rgba(255, 0, 110, 0.5); stroke-width: 3; }
+
+/* Data pulse dots */
+.flow-pulse {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  /* Hardware acceleration for the animation dots */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* === CENTRAL ENGINE NODE === */
+.ml-engine-node {
   position: relative;
+  z-index: 3;
+  flex-shrink: 0;
+  width: 280px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: 1.5px solid var(--engine-glow, #00f3ff);
+  box-shadow:
+    0 0 30px rgba(0, 243, 255, 0.08),
+    0 0 80px rgba(0, 243, 255, 0.04),
+    inset 0 0 30px rgba(0, 243, 255, 0.02);
+  transition: border-color 0.6s ease, box-shadow 0.6s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: default;
+}
+
+/* Double border effect */
+.ml-engine-node::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 23px;
+  border: 1px solid var(--engine-glow, #00f3ff);
+  opacity: 0.25;
+  pointer-events: none;
+  transition: border-color 0.6s ease, opacity 0.6s ease;
+}
+
+/* Pulsing outer glow */
+.ml-engine-node::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 26px;
+  background: transparent;
+  box-shadow: 0 0 40px var(--engine-glow, #00f3ff), 0 0 100px var(--engine-glow, #00f3ff);
+  opacity: 0.06;
+  pointer-events: none;
+  animation: engine-pulse 3s ease-in-out infinite;
+  transition: box-shadow 0.6s ease;
+}
+
+@keyframes engine-pulse {
+
+  0%,
+  100% {
+    opacity: 0.04;
+  }
+
+  50% {
+    opacity: 0.1;
+  }
+}
+
+/* Hover expand / magnetic pull */
+.ml-engine-node:hover {
+  transform: scale(1.04);
+  box-shadow:
+    0 0 50px rgba(0, 243, 255, 0.12),
+    0 0 120px rgba(0, 243, 255, 0.06),
+    inset 0 0 40px rgba(0, 243, 255, 0.03);
+}
+
+.ml-engine-node:hover::before {
+  opacity: 0.4;
+}
+
+/* Engine Icon */
+.ml-engine-icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1.2rem;
+  color: var(--engine-glow, #00f3ff);
+  transition: color 0.6s ease;
+}
+
+.ml-engine-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 12px var(--engine-glow, #00f3ff));
+  transition: filter 0.6s ease;
+}
+
+/* Engine Labels */
+.ml-engine-label {
+  font-family: var(--font-jersey-25), 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #ffffff;
+  letter-spacing: 3px;
+  text-align: center;
+  margin: 0;
+  text-shadow: 0 0 12px var(--engine-glow, rgba(0, 243, 255, 0.4));
+  transition: text-shadow 0.6s ease;
+}
+
+.ml-engine-sublabel {
+  font-family: var(--font-quantico), 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0.5rem 0 0;
+}
+
+/* === SUB-CATEGORY NODES === */
+.ml-flow-nodes {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+  flex-shrink: 0;
+}
+
+.ml-flow-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1.4rem 1.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--node-accent-border, rgba(0, 243, 255, 0.15));
+  border-radius: 12px;
+  min-width: 320px;
   overflow: hidden;
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
     border-color 0.4s ease,
     background 0.4s ease,
     box-shadow 0.4s ease;
   will-change: transform;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  z-index: 1;
+  cursor: default;
 }
 
-.ml-card>* {
-  position: relative;
-  z-index: 1;
-}
-
-.ml-card::before {
+/* Accent top-line */
+.ml-flow-node::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--card-accent, #00f3ff), transparent);
+  background: linear-gradient(90deg, transparent, var(--node-accent, #00f3ff), transparent);
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
+}
+
+/* Localized accent glow */
+.ml-flow-node-glow {
+  position: absolute;
+  top: -60%;
+  left: -20%;
+  width: 140%;
+  height: 220%;
+  background: radial-gradient(ellipse at 50% 50%, var(--node-accent-bg, rgba(0, 243, 255, 0.06)), transparent 70%);
+  pointer-events: none;
   opacity: 0;
   transition: opacity 0.5s ease;
-  z-index: 2;
-}
-
-.ml-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 0;
-  pointer-events: none;
 }
 
-.ml-card:hover::before,
-.ml-card:hover::after {
+.ml-flow-node:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--node-accent, #00f3ff);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 24px var(--node-accent-bg, rgba(0, 243, 255, 0.1));
+}
+
+.ml-flow-node:hover::before {
   opacity: 1;
 }
 
-.ml-card:hover {
-  border-color: rgba(0, 243, 255, 0.3);
-  transform: translate3d(0, -8px, 0) scale(1.02);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 243, 255, 0.1);
+.ml-flow-node:hover .ml-flow-node-glow {
+  opacity: 1;
 }
 
-.ml-card-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+/* Node Icon */
+.ml-flow-node-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, var(--card-accent-bg, rgba(0, 243, 255, 0.1)), transparent);
-  border: 1px solid var(--card-accent-border, rgba(0, 243, 255, 0.15));
+  background: linear-gradient(135deg, var(--node-accent-bg, rgba(0, 243, 255, 0.1)), transparent);
+  border: 1px solid var(--node-accent-border, rgba(0, 243, 255, 0.15));
+  position: relative;
+  z-index: 1;
 }
 
-.ml-card-icon svg {
-  width: 28px;
-  height: 28px;
-  stroke: var(--card-accent, #00f3ff);
+.ml-flow-node-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--node-accent, #00f3ff);
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.ml-card h3 {
-  font-family: var(--font-anta), sans-serif;
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #ffffff;
-  margin: 0 0 0.8rem;
-  letter-spacing: -0.3px;
+/* Node Content */
+.ml-flow-node-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.ml-card p {
-  font-family: var(--font-quantico), sans-serif;
-  font-size: 0.9rem;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.7;
-  margin: 0;
+.ml-flow-node-tag {
+  font-family: var(--font-quantico), 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--node-accent, #00f3ff);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.7;
 }
+
+.ml-flow-node-content h4 {
+  font-family: var(--font-anta), sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.ml-flow-node-content p {
+  font-family: var(--font-quantico), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Magnetic-up reveal animation */
+[data-reveal="magnetic-up"] {
+  transform: translate3d(0, 40px, 0) scale(0.97);
+  filter: blur(4px);
+}
+
 
 /* Neural Network Visualization */
 .nn-section .ml-visualization {
@@ -1106,10 +1308,7 @@ button,
   will-change: transform, opacity;
   contain: layout style;
 
-  /* Use scroll timeline for cinematic scale pulse */
-  animation: viz-pulse linear both;
-  animation-timeline: view();
-  animation-range: entry 0% exit 100%;
+  /* Removed scroll timeline for performance consistency */
 }
 
 @keyframes viz-pulse {
@@ -1160,9 +1359,32 @@ button,
     /* Removed for tablets as requested */
   }
 
-  .ml-grid {
-    grid-template-columns: 1fr;
-    max-width: 500px;
+  /* Flowchart: stack vertically on tablet */
+  .ml-flowchart {
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    min-height: auto;
+  }
+
+  .ml-flow-paths {
+    display: none;
+  }
+
+  .ml-engine-node {
+    width: 260px;
+    min-height: 240px;
+  }
+
+  .ml-flow-nodes {
+    width: 100%;
+    max-width: 420px;
+    align-items: center;
+  }
+
+  .ml-flow-node {
+    min-width: 0;
+    width: 100%;
   }
 
   .ml-visualization {
@@ -1391,8 +1613,62 @@ button,
   }
 
   /* Disable hover transforms on touch — prevent tap jank */
-  .ml-card:hover {
+  .ml-flow-node:hover {
     transform: none;
+  }
+
+  /* Compact flowchart for mobile */
+  .ml-flowchart {
+    gap: 1.5rem;
+  }
+
+  .ml-engine-node {
+    width: 220px;
+    min-height: 200px;
+    padding: 1.8rem 1.5rem;
+  }
+
+  .ml-engine-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.8rem;
+  }
+
+  .ml-engine-label {
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+  }
+
+  .ml-engine-sublabel {
+    font-size: 0.6rem;
+  }
+
+  .ml-flow-node {
+    padding: 1rem 1.2rem;
+    gap: 0.8rem;
+  }
+
+  .ml-flow-node-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .ml-flow-node-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .ml-flow-node-content h4 {
+    font-size: 0.85rem;
+  }
+
+  .ml-flow-node-content p {
+    font-size: 0.7rem;
+  }
+
+  .ml-flow-node-tag {
+    font-size: 0.5rem;
   }
 }
 

@@ -9,6 +9,7 @@ export default function Home() {
   const viewerRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [activeFlowNode, setActiveFlowNode] = useState(null);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [targetText, setTargetText] = useState("SYSTEM BOOT");
@@ -637,38 +638,164 @@ export default function Home() {
           <div className="ml-bg-orb orb-3"></div>
 
           <div className="ml-container">
-            <div className="ml-header stagger-root">
-              <div className="ml-badge" data-reveal="scale">
-                <div className="ml-badge-dot"></div>
-                Machine Learning
-              </div>
-              <h2 className="ml-title" data-reveal="up">Where Data Becomes <br />Intelligence</h2>
-              <p className="ml-subtitle" data-reveal="up">Machine learning enables systems to learn from data, identify patterns, and make decisions with minimal human intervention — reshaping every industry on the planet.</p>
-            </div>
+            {/* === INTERACTIVE FLOWCHART ARCHITECTURE === */}
+            <div className="ml-flowchart" data-active-node={activeFlowNode || ''}>
+              {/* SVG Connection Paths */}
+              <svg className="ml-flow-paths" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  {/* Pulse gradients maintained for potential use */}
+                  <linearGradient id="pulse-grad-supervised" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="transparent" />
+                    <stop offset="45%" stopColor="transparent" />
+                    <stop offset="50%" stopColor="#00f3ff" />
+                    <stop offset="55%" stopColor="transparent" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </linearGradient>
 
-            <div className="ml-grid stagger-root">
-              <div className="ml-card" data-reveal="magnetic-up" style={{ '--card-accent': '#00f3ff', '--card-accent-bg': 'rgba(0,243,255,0.1)', '--card-accent-border': 'rgba(0,243,255,0.15)' }}>
-                <div className="ml-card-icon">
-                  <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
+                  <linearGradient id="pulse-grad-unsupervised" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="transparent" />
+                    <stop offset="45%" stopColor="transparent" />
+                    <stop offset="50%" stopColor="#b56cff" />
+                    <stop offset="55%" stopColor="transparent" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </linearGradient>
+
+                  <linearGradient id="pulse-grad-reinforcement" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="transparent" />
+                    <stop offset="45%" stopColor="transparent" />
+                    <stop offset="50%" stopColor="#ff006e" />
+                    <stop offset="55%" stopColor="transparent" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </linearGradient>
+                </defs>
+
+                {/* Path: Center → Supervised (Top Right) */}
+                <path className="flow-line flow-line--supervised" d="M 255 300 C 450 300, 500 140, 672 140" 
+                  stroke="rgba(0,243,255,0.12)" strokeWidth="2" fill="none" />
+                <circle className="flow-pulse flow-pulse--supervised" r="5" fill="#00f3ff" 
+                  style={{ filter: 'drop-shadow(0 0 5px #00f3ff)' }} shapeRendering="optimizeSpeed">
+                  <animateMotion dur="3s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 140, 672 140" />
+                </circle>
+                <circle className="flow-pulse flow-pulse--supervised" r="3" fill="#00f3ff" opacity="0.5" 
+                  style={{ filter: 'drop-shadow(0 0 3px #00f3ff)' }} shapeRendering="optimizeSpeed">
+                  <animateMotion dur="3s" begin="1.5s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 140, 672 140" />
+                </circle>
+
+                {/* Path: Center → Unsupervised (Center Right) */}
+                <path className="flow-line flow-line--unsupervised" d="M 255 300 C 450 300, 550 300, 672 300" 
+                  stroke="rgba(181,108,255,0.12)" strokeWidth="2" fill="none" />
+                <circle className="flow-pulse flow-pulse--unsupervised" r="5" fill="#b56cff" 
+                  style={{ filter: 'drop-shadow(0 0 5px #b56cff)' }} shapeRendering="optimizeSpeed">
+                  <animateMotion dur="2.8s" begin="0.4s" repeatCount="indefinite" path="M 255 300 C 450 300, 550 300, 672 300" />
+                </circle>
+                <circle className="flow-pulse flow-pulse--unsupervised" r="3" fill="#b56cff" opacity="0.5" 
+                  style={{ filter: 'drop-shadow(0 0 3px #b56cff)' }} shapeRendering="optimizeSpeed">
+                  <animateMotion dur="2.8s" begin="1.8s" repeatCount="indefinite" path="M 255 300 C 450 300, 550 300, 672 300" />
+                </circle>
+
+                {/* Path: Center → Reinforcement (Bottom Right) */}
+                <path className="flow-line flow-line--reinforcement" d="M 255 300 C 450 300, 500 460, 672 460" 
+                  stroke="rgba(255,0,110,0.12)" strokeWidth="2" fill="none" />
+                <circle className="flow-pulse flow-pulse--reinforcement" r="5" fill="#ff006e" 
+                  style={{ filter: 'drop-shadow(0 0 5px #ff006e)' }} shapeRendering="optimizeSpeed">
+                  <animateMotion dur="3.2s" begin="0.8s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 460, 672 460" />
+                </circle>
+                <circle className="flow-pulse flow-pulse--reinforcement" r="3" fill="#ff006e" opacity="0.5" 
+                  style={{ filter: 'drop-shadow(0 0 3px #ff006e)' }} shapeRendering="optimizeSpeed">
+                  <animateMotion dur="3.2s" begin="2.2s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 460, 672 460" />
+                </circle>
+              </svg>
+
+              {/* === CENTRAL ENGINE NODE === */}
+              <div className="ml-engine-node"
+                style={{ '--engine-glow': activeFlowNode === 'supervised' ? '#00f3ff' : activeFlowNode === 'unsupervised' ? '#b56cff' : activeFlowNode === 'reinforcement' ? '#ff006e' : '#00f3ff' }}
+              >
+                <div className="ml-engine-icon">
+                  {/* Animated Brain/Processor SVG */}
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
+                      <animateTransform attributeName="transform" type="rotate" dur="20s" repeatCount="indefinite" from="0 24 24" to="360 24 24" />
+                    </circle>
+                    <circle cx="24" cy="24" r="12" stroke="currentColor" strokeWidth="1" opacity="0.5">
+                      <animateTransform attributeName="transform" type="rotate" dur="12s" repeatCount="indefinite" from="360 24 24" to="0 24 24" />
+                    </circle>
+                    {/* Neural core */}
+                    <circle cx="24" cy="24" r="4" fill="currentColor" opacity="0.8">
+                      <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    {/* Synaptic connections */}
+                    <line x1="24" y1="6" x2="24" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="24" y1="34" x2="24" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="6" y1="24" x2="14" y2="24" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="34" y1="24" x2="42" y2="24" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="11.27" y1="11.27" x2="16.97" y2="16.97" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+                    <line x1="31.03" y1="31.03" x2="36.73" y2="36.73" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+                    <line x1="36.73" y1="11.27" x2="31.03" y2="16.97" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+                    <line x1="16.97" y1="31.03" x2="11.27" y2="36.73" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+                    {/* Outer pulse ring */}
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.15">
+                      <animate attributeName="r" values="18;22;18" dur="3s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.15;0.05;0.15" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                  </svg>
                 </div>
-                <h3>Supervised Learning</h3>
-                <p>Algorithms learn from labeled training data to map inputs to outputs, enabling precise classification and regression tasks with remarkable accuracy.</p>
+                <h3 className="ml-engine-label">MACHINE LEARNING ENGINE</h3>
+                <p className="ml-engine-sublabel">Core Intelligence Architecture</p>
               </div>
 
-              <div className="ml-card" data-reveal="magnetic-up" style={{ '--card-accent': '#b56cff', '--card-accent-bg': 'rgba(181,108,255,0.1)', '--card-accent-border': 'rgba(181,108,255,0.15)' }}>
-                <div className="ml-card-icon">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 1v4" /><path d="M12 19v4" /><path d="M4.22 4.22l2.83 2.83" /><path d="M16.95 16.95l2.83 2.83" /><path d="M1 12h4" /><path d="M19 12h4" /><path d="M4.22 19.78l2.83-2.83" /><path d="M16.95 7.05l2.83-2.83" /></svg>
+              {/* === SUB-CATEGORY NODES === */}
+              <div className="ml-flow-nodes">
+                {/* Supervised Learning */}
+                <div className="ml-flow-node ml-flow-node--supervised"
+                  onMouseEnter={() => setActiveFlowNode('supervised')}
+                  onMouseLeave={() => setActiveFlowNode(null)}
+                  style={{ '--node-accent': '#00f3ff', '--node-accent-bg': 'rgba(0,243,255,0.06)', '--node-accent-border': 'rgba(0,243,255,0.2)' }}
+                >
+                  <div className="ml-flow-node-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
+                  </div>
+                  <div className="ml-flow-node-content">
+                    <span className="ml-flow-node-tag">CLASSIFICATION &bull; REGRESSION</span>
+                    <h4>SUPERVISED LEARNING</h4>
+                    <p>Pattern Matching & Labelled Data</p>
+                  </div>
+                  <div className="ml-flow-node-glow"></div>
                 </div>
-                <h3>Unsupervised Learning</h3>
-                <p>Discovers hidden structures in unlabeled data through clustering and dimensionality reduction, revealing patterns humans might never find.</p>
-              </div>
 
-              <div className="ml-card" data-reveal="magnetic-up" style={{ '--card-accent': '#ff006e', '--card-accent-bg': 'rgba(255,0,110,0.1)', '--card-accent-border': 'rgba(255,0,110,0.15)' }}>
-                <div className="ml-card-icon">
-                  <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></svg>
+                {/* Unsupervised Learning */}
+                <div className="ml-flow-node ml-flow-node--unsupervised"
+                  onMouseEnter={() => setActiveFlowNode('unsupervised')}
+                  onMouseLeave={() => setActiveFlowNode(null)}
+                  style={{ '--node-accent': '#b56cff', '--node-accent-bg': 'rgba(181,108,255,0.06)', '--node-accent-border': 'rgba(181,108,255,0.2)' }}
+                >
+                  <div className="ml-flow-node-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 1v4" /><path d="M12 19v4" /><path d="M4.22 4.22l2.83 2.83" /><path d="M16.95 16.95l2.83 2.83" /><path d="M1 12h4" /><path d="M19 12h4" /><path d="M4.22 19.78l2.83-2.83" /><path d="M16.95 7.05l2.83-2.83" /></svg>
+                  </div>
+                  <div className="ml-flow-node-content">
+                    <span className="ml-flow-node-tag">CLUSTERING &bull; DIMENSIONALITY</span>
+                    <h4>UNSUPERVISED LEARNING</h4>
+                    <p>Structure Discovery & Clustering</p>
+                  </div>
+                  <div className="ml-flow-node-glow"></div>
                 </div>
-                <h3>Reinforcement Learning</h3>
-                <p>Agents learn optimal strategies through trial, error, and reward signals — the same paradigm behind game-playing AIs and autonomous robotics.</p>
+
+                {/* Reinforcement Learning */}
+                <div className="ml-flow-node ml-flow-node--reinforcement"
+                  onMouseEnter={() => setActiveFlowNode('reinforcement')}
+                  onMouseLeave={() => setActiveFlowNode(null)}
+                  style={{ '--node-accent': '#ff006e', '--node-accent-bg': 'rgba(255,0,110,0.06)', '--node-accent-border': 'rgba(255,0,110,0.2)' }}
+                >
+                  <div className="ml-flow-node-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></svg>
+                  </div>
+                  <div className="ml-flow-node-content">
+                    <span className="ml-flow-node-tag">AGENTS &bull; REWARDS</span>
+                    <h4>REINFORCEMENT LEARNING</h4>
+                    <p>Strategy Optimization & Rewards</p>
+                  </div>
+                  <div className="ml-flow-node-glow"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -679,27 +806,27 @@ export default function Home() {
           <div className="ml-bg-orb orb-1"></div>
           <div className="ml-bg-orb orb-4"></div>
 
-          <div className="ml-visualization" data-reveal="up">
+          <div className="ml-visualization">
             <div className="ml-viz-content stagger-root">
-              <div className="ml-viz-label" data-reveal="right">Real-time Processing</div>
-              <h3 className="ml-viz-title" data-reveal="up">Neural Network<br />Architecture</h3>
-              <p className="ml-viz-desc" data-reveal="up">Modern machine learning models process millions of data points through layers of interconnected neurons, each one refining the signal until clarity emerges from chaos.</p>
+              <div className="ml-viz-label">Real-time Processing</div>
+              <h3 className="ml-viz-title">Neural Network<br />Architecture</h3>
+              <p className="ml-viz-desc">Modern machine learning models process millions of data points through layers of interconnected neurons, each one refining the signal until clarity emerges from chaos.</p>
               <div className="ml-stats stagger-root">
-                <div className="ml-stat" data-reveal="scale">
+                <div className="ml-stat">
                   <span className="ml-stat-value" data-count="175">0</span>
                   <span className="ml-stat-label">Billion Parameters</span>
                 </div>
-                <div className="ml-stat" data-reveal="scale">
+                <div className="ml-stat">
                   <span className="ml-stat-value" data-count="99.7">0</span>
                   <span className="ml-stat-label">% Accuracy</span>
                 </div>
-                <div className="ml-stat" data-reveal="scale">
+                <div className="ml-stat">
                   <span className="ml-stat-value" data-count="50">0</span>
                   <span className="ml-stat-label">ms Inference</span>
                 </div>
               </div>
             </div>
-            <div className="ml-neural-canvas" data-reveal="scale">
+            <div className="ml-neural-canvas">
               <canvas id="neural-net-canvas" ref={canvasRef}></canvas>
             </div>
           </div>
