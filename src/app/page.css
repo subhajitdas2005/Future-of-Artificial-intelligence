@@ -624,7 +624,8 @@ body.focus-mode-active .focus-mode-btn {
 
 /* === MACHINE LEARNING & NEURAL NETWORK SECTIONS === */
 .ml-section,
-.nn-section {
+.nn-section,
+.gen-ai-section {
   position: relative;
   min-height: 100vh;
   width: 100%;
@@ -634,7 +635,8 @@ body.focus-mode-active .focus-mode-btn {
   flex-direction: column;
   align-items: center;
   overflow: hidden;
-  margin-top: -5px; /* Deep overlap to hide seams */
+  margin-top: -5px;
+  /* Deep overlap to hide seams */
   z-index: 1;
   scroll-snap-align: start;
   scroll-margin-top: 5px;
@@ -665,34 +667,28 @@ body.focus-mode-active .focus-mode-btn {
   transform: translate3d(0, 0, 0);
 }
 
-.ml-section::after {
+.ml-section::after,
+.nn-section::after,
+.gen-ai-section::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 200px;
-  background: linear-gradient(to bottom, #030014 0%, transparent 100%);
+  height: 100%;
+  background:
+    linear-gradient(to bottom, #030014 0%, transparent 200px),
+    linear-gradient(to top, #030014 0%, transparent 350px);
   z-index: 1;
   pointer-events: none;
 }
 
-.nn-section::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 120px;
-  background: linear-gradient(to bottom, #030014 0%, transparent 100%);
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.6; /* Subtle blend so the two sections merge smoothly */
-}
+
 
 /* Cinematic Parallax Grid */
 .ml-section::before,
-.nn-section::before {
+.nn-section::before,
+.gen-ai-section::before {
   content: '';
   position: absolute;
   top: -20%;
@@ -707,8 +703,8 @@ body.focus-mode-active .focus-mode-btn {
   will-change: transform;
   z-index: 0;
   /* Fade grid at top/bottom edges so sections blend seamlessly */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
 }
 
 @keyframes gridPulse {
@@ -898,9 +894,20 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 /* Ensure the lines have color even when revealed from opacity 0 */
-.flow-line--supervised { stroke: rgba(0, 243, 255, 0.5); stroke-width: 3; }
-.flow-line--unsupervised { stroke: rgba(181, 108, 255, 0.5); stroke-width: 3; }
-.flow-line--reinforcement { stroke: rgba(255, 0, 110, 0.5); stroke-width: 3; }
+.flow-line--supervised {
+  stroke: rgba(0, 243, 255, 0.5);
+  stroke-width: 3;
+}
+
+.flow-line--unsupervised {
+  stroke: rgba(181, 108, 255, 0.5);
+  stroke-width: 3;
+}
+
+.flow-line--reinforcement {
+  stroke: rgba(255, 0, 110, 0.5);
+  stroke-width: 3;
+}
 
 /* Data pulse dots */
 .flow-pulse {
@@ -1193,7 +1200,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-viz-label {
-  font-family: var(--font-quantico), sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 3px;
@@ -1202,6 +1209,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-viz-title {
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: clamp(1.6rem, 5vw, 2.5rem);
   font-weight: 300;
   letter-spacing: -1px;
@@ -1211,7 +1219,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-viz-desc {
-  font-family: var(--font-quantico), sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: 1rem;
   font-weight: 300;
   color: rgba(255, 255, 255, 0.5);
@@ -1235,6 +1243,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-stat-value {
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: clamp(1.4rem, 4vw, 2rem);
   font-weight: 600;
   background: linear-gradient(135deg, #00f3ff, #b8b8ff);
@@ -1244,7 +1253,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-stat-label {
-  font-family: var(--font-quantico), sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: clamp(0.6rem, 1.8vw, 0.75rem);
   text-transform: uppercase;
   letter-spacing: clamp(0.5px, 0.3vw, 1.5px);
@@ -1709,4 +1718,358 @@ button,
     font-size: 0.82rem;
     padding: 0 0.25rem;
   }
+}
+
+/* === GENERATIVE AI ORBITAL SYSTEM === */
+.gen-ai-section {
+  padding: 4rem 0; /* Override the 0 4rem if necessary, or let it inherit */
+}
+
+/* Starry Background */
+.stars-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image: 
+    radial-gradient(1.5px 1.5px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 40px 70px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 40px, rgba(0,243,255,0.8), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 220px 180px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 280px 60px, rgba(168,85,247,0.8), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 350px 150px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 100px 250px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 300px 300px, rgba(0,243,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 400px 200px, #ffffff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 450px 400px;
+  animation: starsTwinkle 6s ease-in-out infinite alternate;
+  opacity: 0.5;
+}
+
+@keyframes starsTwinkle {
+  0% { opacity: 0.2; transform: scale(1); }
+  100% { opacity: 0.7; transform: scale(1.02); }
+}
+
+/* Removed gen-ai-bg to use ml-section-bg */
+
+.gen-ai-header {
+  text-align: center;
+  z-index: 2;
+  margin-bottom: 2rem;
+  pointer-events: auto;
+}
+
+.gen-ai-subtext {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.orbital-system {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.orbits-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.orbit-path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1px;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.orbit-path.highlighted {
+  stroke: rgba(0, 243, 255, 0.4);
+  stroke-width: 1.5px;
+}
+
+.synthesis-core {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  visibility: hidden; /* Prevent millisecond flash */
+}
+
+.core-inner {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, #00f3ff 20%, transparent 80%);
+  border-radius: 50%;
+  box-shadow: 0 0 20px #00f3ff, 0 0 40px #00f3ff;
+  animation: corePulse 2s infinite alternate;
+}
+
+.core-halo {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 243, 255, 0.15) 0%, transparent 70%);
+  animation: haloSpin 8s linear infinite;
+}
+
+.core-label {
+  position: absolute;
+  bottom: -30px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #00f3ff;
+  letter-spacing: 2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes corePulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes haloSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.modality-planet {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transform: scale(0);
+  visibility: hidden; /* Prevent millisecond flash */
+}
+
+.modality-planet.dimmed {
+  opacity: 0.2;
+  filter: grayscale(80%) blur(2px);
+}
+
+.planet-halo {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--planet-color);
+  opacity: 0.2;
+  filter: blur(10px);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.modality-planet:hover .planet-halo {
+  opacity: 0.6;
+  filter: blur(15px);
+}
+
+.planet-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--planet-color);
+  z-index: 2;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.modality-planet:hover .planet-icon {
+  transform: scale(1.15);
+  box-shadow: 0 0 15px var(--planet-color);
+  border-color: var(--planet-color);
+}
+
+.planet-label {
+  position: absolute;
+  bottom: -25px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  color: white;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.modality-planet:hover .planet-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Artifact Card Modal */
+.artifact-card-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.artifact-card-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.artifact-card-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(3, 0, 20, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+.artifact-card.glassmorphic {
+  position: relative;
+  width: 90%;
+  max-width: 600px;
+  min-height: 400px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.artifact-card-modal.visible .artifact-card {
+  transform: scale(1) translateY(0);
+}
+
+.close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.artifact-header {
+  margin-bottom: 2rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1rem;
+}
+
+.artifact-body {
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.artifact-code code {
+  display: block;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #00f3ff;
+}
+
+.artifact-image .noise-overlay {
+  width: 100%;
+  height: 200px;
+  background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+  opacity: 0.2;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.artifact-video .video-frames {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: scan 2s linear infinite;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.artifact-audio .waveform {
+  width: 100%;
+  height: 100px;
+  background: repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(255, 0, 110, 0.4) 5px, rgba(255, 0, 110, 0.4) 8px);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  animation: pulseWave 1s infinite alternate;
+}
+
+@keyframes scan {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes pulseWave {
+  0% { opacity: 0.6; transform: scaleY(0.8); }
+  100% { opacity: 1; transform: scaleY(1.2); }
 }

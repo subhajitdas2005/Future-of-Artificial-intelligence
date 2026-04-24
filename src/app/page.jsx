@@ -2,6 +2,184 @@
 
 import { useRef, useState, useEffect } from 'react';
 import './page.css';
+import gsap from 'gsap';
+import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(MotionPathPlugin, ScrollTrigger);
+}
+
+const planetsData = [
+  { id: 'text', name: 'Text', rx: 200, ry: 80, dur: 12, color: '#00f3ff', icon: <path d="M4 6h16M4 12h16M4 18h10" /> },
+  { id: 'image', name: 'Image', rx: 280, ry: 120, dur: 16, color: '#b56cff', icon: <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" /> },
+  { id: 'audio', name: 'Audio', rx: 360, ry: 160, dur: 20, color: '#ff006e', icon: <><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" /></> },
+  { id: 'video', name: 'Video', rx: 440, ry: 200, dur: 24, color: '#00ffcc', icon: <><path d="m22 8-6 4 6 4V8Z" /><rect width="14" height="12" x="2" y="6" rx="2" ry="2" /></> },
+  { id: 'code', name: 'Code', rx: 520, ry: 240, dur: 28, color: '#ffcc00', icon: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></> }
+];
+
+function GenerativeAISection() {
+  const containerRef = useRef(null);
+  const coreRef = useRef(null);
+  const planetsRef = useRef([]);
+  const pathsRef = useRef([]);
+  const [activeModality, setActiveModality] = useState(null);
+  const [hoveredModality, setHoveredModality] = useState(null);
+  const animationsRef = useRef({});
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 95%",
+          once: true
+        }
+      });
+
+      gsap.set(planetsRef.current, { scale: 0 });
+      gsap.set(coreRef.current, { scale: 0 });
+
+      tl.to(coreRef.current, { scale: 1, autoAlpha: 1, duration: 0.5, ease: "back.out(2)" })
+        .to(planetsRef.current, {
+          scale: 1,
+          autoAlpha: 1,
+          duration: 0.5,
+          stagger: 0.05,
+          ease: "power2.out",
+          onComplete: () => {
+            planetsData.forEach((planet, i) => {
+              const el = planetsRef.current[i];
+              const pathEl = pathsRef.current[i];
+              if (!el || !pathEl) return;
+              const orbit = gsap.to(el, {
+                motionPath: {
+                  path: pathEl,
+                  align: pathEl,
+                  alignOrigin: [0.5, 0.5]
+                },
+                duration: planet.dur,
+                ease: "none",
+                repeat: -1
+              });
+              animationsRef.current[planet.id] = orbit;
+            });
+          }
+        }, "-=0.8");
+    }, containerRef);
+    return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    planetsData.forEach((planet) => {
+      const anim = animationsRef.current[planet.id];
+      if (anim) {
+        if (activeModality) {
+          gsap.to(anim, { timeScale: 0, duration: 0.5 });
+        } else if (hoveredModality === planet.id) {
+          gsap.to(anim, { timeScale: 0.2, duration: 0.5 });
+        } else {
+          gsap.to(anim, { timeScale: 1, duration: 0.5 });
+        }
+      }
+    });
+  }, [hoveredModality, activeModality]);
+
+  const handlePlanetClick = (id) => {
+    setActiveModality(id);
+  };
+
+  const getArtifactContent = (id) => {
+    switch (id) {
+      case 'text': return <div className="artifact-text">Generating narrative structure...<br />&gt; Analyzing context<br />&gt; Synthesizing language model</div>;
+      case 'image': return <div className="artifact-image"><div className="noise-overlay"></div><p>Rendering visual latent space...</p></div>;
+      case 'audio': return <div className="artifact-audio"><div className="waveform"></div><p>Synthesizing audio frequencies...</p></div>;
+      case 'video': return <div className="artifact-video"><div className="video-frames"></div><p>Generating temporal sequences...</p></div>;
+      case 'code': return <div className="artifact-code"><code>function synthesize() &#123;<br />  return AI.generate('future');<br />&#125;</code></div>;
+      default: return null;
+    }
+  };
+
+  return (
+    <section className="gen-ai-section" id="generative-ai" ref={containerRef}>
+      <div className="ml-section-bg"></div>
+      <div className="stars-bg"></div>
+
+      <div className="gen-ai-header stagger-root">
+        <h2 className="minimal-heading" data-reveal="up">Generative AI</h2>
+        <p className="minimal-subtext gen-ai-subtext" data-reveal="up" style={{ '--reveal-delay': '100ms' }}>
+          Machines that imagine. By learning complex patterns from massive datasets, Generative AI can create entirely new, original content across multiple modalities.
+        </p>
+      </div>
+
+      <div className="orbital-system">
+        <svg className="orbits-svg" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(0, 243, 255, 0.4)" />
+              <stop offset="100%" stopColor="rgba(0, 243, 255, 0)" />
+            </radialGradient>
+          </defs>
+          {planetsData.map((planet, i) => (
+            <path
+              key={`orbit-${planet.id}`}
+              id={`orbit-${planet.id}`}
+              ref={el => pathsRef.current[i] = el}
+              d={`M 600,${300 - planet.ry} A ${planet.rx},${planet.ry} 0 1,0 600,${300 + planet.ry} A ${planet.rx},${planet.ry} 0 1,0 600,${300 - planet.ry}`}
+              className={`orbit-path ${hoveredModality === planet.id ? 'highlighted' : ''}`}
+            />
+          ))}
+        </svg>
+
+        <div className="synthesis-core" ref={coreRef}>
+          <div className="core-inner"></div>
+          <div className="core-halo"></div>
+          <div className="core-label">SYNTHESIS CORE</div>
+        </div>
+
+        {planetsData.map((planet, i) => (
+          <div
+            key={planet.id}
+            className={`modality-planet ${activeModality === planet.id ? 'active' : ''} ${activeModality && activeModality !== planet.id ? 'dimmed' : ''}`}
+            ref={el => planetsRef.current[i] = el}
+            onMouseEnter={() => setHoveredModality(planet.id)}
+            onMouseLeave={() => setHoveredModality(null)}
+            onClick={() => handlePlanetClick(planet.id)}
+            style={{ '--planet-color': planet.color }}
+          >
+            <div className="planet-halo"></div>
+            <div className="planet-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {planet.icon}
+              </svg>
+            </div>
+            <div className="planet-label">{planet.name}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className={`artifact-card-modal ${activeModality ? 'visible' : ''}`}>
+        <div className="artifact-card-backdrop" onClick={() => setActiveModality(null)}></div>
+        <div className="artifact-card glassmorphic">
+          <button className="close-btn" onClick={() => setActiveModality(null)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+          {activeModality && (
+            <div className="artifact-content">
+              <div className="artifact-header" style={{ color: planetsData.find(p => p.id === activeModality)?.color }}>
+                <h3>{planetsData.find(p => p.id === activeModality)?.name} Modality</h3>
+              </div>
+              <div className="artifact-body">
+                {getArtifactContent(activeModality)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const containerRef = useRef(null);
@@ -670,37 +848,37 @@ export default function Home() {
                 </defs>
 
                 {/* Path: Center → Supervised (Top Right) */}
-                <path className="flow-line flow-line--supervised" d="M 255 300 C 450 300, 500 140, 672 140" 
+                <path className="flow-line flow-line--supervised" d="M 255 300 C 450 300, 500 140, 672 140"
                   stroke="rgba(0,243,255,0.12)" strokeWidth="2" fill="none" />
-                <circle className="flow-pulse flow-pulse--supervised" r="5" fill="#00f3ff" 
+                <circle className="flow-pulse flow-pulse--supervised" r="5" fill="#00f3ff"
                   style={{ filter: 'drop-shadow(0 0 5px #00f3ff)' }} shapeRendering="optimizeSpeed">
                   <animateMotion dur="3s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 140, 672 140" />
                 </circle>
-                <circle className="flow-pulse flow-pulse--supervised" r="3" fill="#00f3ff" opacity="0.5" 
+                <circle className="flow-pulse flow-pulse--supervised" r="3" fill="#00f3ff" opacity="0.5"
                   style={{ filter: 'drop-shadow(0 0 3px #00f3ff)' }} shapeRendering="optimizeSpeed">
                   <animateMotion dur="3s" begin="1.5s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 140, 672 140" />
                 </circle>
 
                 {/* Path: Center → Unsupervised (Center Right) */}
-                <path className="flow-line flow-line--unsupervised" d="M 255 300 C 450 300, 550 300, 672 300" 
+                <path className="flow-line flow-line--unsupervised" d="M 255 300 C 450 300, 550 300, 672 300"
                   stroke="rgba(181,108,255,0.12)" strokeWidth="2" fill="none" />
-                <circle className="flow-pulse flow-pulse--unsupervised" r="5" fill="#b56cff" 
+                <circle className="flow-pulse flow-pulse--unsupervised" r="5" fill="#b56cff"
                   style={{ filter: 'drop-shadow(0 0 5px #b56cff)' }} shapeRendering="optimizeSpeed">
                   <animateMotion dur="2.8s" begin="0.4s" repeatCount="indefinite" path="M 255 300 C 450 300, 550 300, 672 300" />
                 </circle>
-                <circle className="flow-pulse flow-pulse--unsupervised" r="3" fill="#b56cff" opacity="0.5" 
+                <circle className="flow-pulse flow-pulse--unsupervised" r="3" fill="#b56cff" opacity="0.5"
                   style={{ filter: 'drop-shadow(0 0 3px #b56cff)' }} shapeRendering="optimizeSpeed">
                   <animateMotion dur="2.8s" begin="1.8s" repeatCount="indefinite" path="M 255 300 C 450 300, 550 300, 672 300" />
                 </circle>
 
                 {/* Path: Center → Reinforcement (Bottom Right) */}
-                <path className="flow-line flow-line--reinforcement" d="M 255 300 C 450 300, 500 460, 672 460" 
+                <path className="flow-line flow-line--reinforcement" d="M 255 300 C 450 300, 500 460, 672 460"
                   stroke="rgba(255,0,110,0.12)" strokeWidth="2" fill="none" />
-                <circle className="flow-pulse flow-pulse--reinforcement" r="5" fill="#ff006e" 
+                <circle className="flow-pulse flow-pulse--reinforcement" r="5" fill="#ff006e"
                   style={{ filter: 'drop-shadow(0 0 5px #ff006e)' }} shapeRendering="optimizeSpeed">
                   <animateMotion dur="3.2s" begin="0.8s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 460, 672 460" />
                 </circle>
-                <circle className="flow-pulse flow-pulse--reinforcement" r="3" fill="#ff006e" opacity="0.5" 
+                <circle className="flow-pulse flow-pulse--reinforcement" r="3" fill="#ff006e" opacity="0.5"
                   style={{ filter: 'drop-shadow(0 0 3px #ff006e)' }} shapeRendering="optimizeSpeed">
                   <animateMotion dur="3.2s" begin="2.2s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 460, 672 460" />
                 </circle>
@@ -803,7 +981,7 @@ export default function Home() {
 
         <section className="nn-section" id="neural-networks">
           <div className="ml-section-bg"></div>
-          <div className="ml-bg-orb orb-1"></div>
+          <div className="ml-bg-orb orb-2"></div>
           <div className="ml-bg-orb orb-4"></div>
 
           <div className="ml-visualization">
@@ -831,6 +1009,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <GenerativeAISection />
       </main>
     </>
   );
