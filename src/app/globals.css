@@ -19,13 +19,33 @@ body, html {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
   background: var(--bg-color);
   color: var(--text-color);
   font-family: 'Inter', sans-serif;
-  scroll-behavior: smooth;
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Lenis Smooth Scroll Essential Styles */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 body::-webkit-scrollbar {

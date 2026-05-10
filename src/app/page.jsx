@@ -1,22 +1,37 @@
 "use client";
 
 import { useRef, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './page.css';
 import gsap from 'gsap';
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(MotionPathPlugin, ScrollTrigger);
+  gsap.registerPlugin(MotionPathPlugin, ScrollTrigger, ScrollToPlugin);
+  
+  // Performance-optimized global GSAP configuration
+  gsap.config({ 
+    force3D: true, 
+    nullTargetWarn: false,
+    units: { left: "px", top: "px", width: "px", height: "px" }
+  });
+  
+  // Batch all writes to prevent layout thrashing
+  gsap.defaults({ 
+    lazy: true,
+    overwrite: "auto"
+  });
 }
 
 const ORBIT_RATIO = 0.44;
 const planetsData = [
-  { id: 'text', name: 'Text', rx: 200, ry: 200 * ORBIT_RATIO, dur: 12, color: '#00f3ff', angle: 0 },
-  { id: 'image', name: 'Image', rx: 280, ry: 280 * ORBIT_RATIO, dur: 16, color: '#b56cff', angle: 0 },
-  { id: 'audio', name: 'Audio', rx: 360, ry: 360 * ORBIT_RATIO, dur: 20, color: '#ff006e', angle: 0 },
-  { id: 'video', name: 'Video', rx: 440, ry: 440 * ORBIT_RATIO, dur: 24, color: '#00ffcc', angle: 0 },
-  { id: 'code', name: 'Code', rx: 520, ry: 520 * ORBIT_RATIO, dur: 28, color: '#4d9fff', angle: 0 }
+  { id: 'text', name: 'Text', rx: 200, ry: 200 * ORBIT_RATIO, dur: 12, color: '#00f3ff', angle: -8 },
+  { id: 'image', name: 'Image', rx: 280, ry: 280 * ORBIT_RATIO, dur: 16, color: '#b56cff', angle: -8 },
+  { id: 'audio', name: 'Audio', rx: 360, ry: 360 * ORBIT_RATIO, dur: 20, color: '#ff006e', angle: -8 },
+  { id: 'video', name: 'Video', rx: 440, ry: 440 * ORBIT_RATIO, dur: 24, color: '#00ffcc', angle: -8 },
+  { id: 'code', name: 'Code', rx: 520, ry: 520 * ORBIT_RATIO, dur: 28, color: '#4d9fff', angle: -8 }
 ];
 
 function Typewriter({ text, speed = 30, delay = 0 }) {
@@ -41,7 +56,7 @@ function Typewriter({ text, speed = 30, delay = 0 }) {
       };
       type();
     };
-    
+
 
     const initialDelay = setTimeout(startTyping, delay);
     return () => {
@@ -66,7 +81,7 @@ function VoiceGenerator({ text, color }) {
   const barCount = 40;
 
   const animate = (time) => {
-    // Throttle to ~15fps for waveform — no perceptible difference vs 60fps
+    // Throttle for visual variance while keeping rendering load minimal
     if (time - lastFrameTime.current < 66) {
       requestRef.current = requestAnimationFrame(animate);
       return;
@@ -74,11 +89,20 @@ function VoiceGenerator({ text, color }) {
     lastFrameTime.current = time;
 
     if (barsRef.current) {
-      const bars = barsRef.current.children;
+      const bars = Array.from(barsRef.current.children);
+      // Create a cache of setters for each bar to avoid repeated lookups
+      if (!barsRef.current._setters) {
+        barsRef.current._setters = bars.map(bar => ({
+          scaleY: gsap.quickSetter(bar, "scaleY"),
+          opacity: gsap.quickSetter(bar, "opacity")
+        }));
+      }
+
       for (let i = 0; i < bars.length; i++) {
         const h = 0.5 + Math.random() * 2;
-        bars[i].style.transform = `scaleY(${h})`;
-        bars[i].style.opacity = 0.4 + (h * 0.3);
+        const setters = barsRef.current._setters[i];
+        setters.scaleY(h);
+        setters.opacity(0.4 + (h * 0.3));
       }
     }
     requestRef.current = requestAnimationFrame(animate);
@@ -103,11 +127,11 @@ function VoiceGenerator({ text, color }) {
 
   const speak = () => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    utterance.pitch = 0.5; 
+
+    utterance.pitch = 0.5;
     utterance.rate = 0.85;
     utterance.volume = 1;
 
@@ -131,10 +155,10 @@ function VoiceGenerator({ text, color }) {
       <div className="voice-generator-container full-area">
         <div className={`waveform-visualizer ${isSpeaking ? 'is-speaking' : ''}`} style={{ '--wave-color': color }} ref={barsRef}>
           {Array.from({ length: barCount }).map((_, i) => (
-            <div 
-              key={i} 
-              className="wave-line" 
-              style={{ 
+            <div
+              key={i}
+              className="wave-line"
+              style={{
                 '--idx': i,
                 transform: 'scaleY(1)',
                 opacity: 0.2
@@ -214,7 +238,7 @@ function VideoGenerator({ color }) {
       }, 50);
       return () => clearInterval(frameInterval);
     } else {
-       let frameInterval = setInterval(() => {
+      let frameInterval = setInterval(() => {
         setActiveFrame(prev => (prev + 1) % totalFrames);
       }, 100);
       return () => clearInterval(frameInterval);
@@ -232,13 +256,22 @@ function VideoGenerator({ color }) {
       <div className="video-main-screen" style={{ '--theme-color': color }}>
         <div className="video-overlay" style={{ opacity: isResolved ? 0 : 0.8 }}></div>
         <div className="video-content" style={{ opacity: isResolved ? 1 : 0.3 }}>
-           <div className="animated-subject" style={{ 
-             transform: `translate(${xPos}px, ${yPos}px) scale(${1 + (yPos / -60) * 0.2})`,
-             transition: activeFrame === 0 ? 'none' : 'transform 0.05s linear'
-           }}>
-             <div className="subject-core" style={{ background: color, boxShadow: `0 0 20px ${color}` }}></div>
-             <div className="subject-ring" style={{ borderColor: color }}></div>
-           </div>
+          <motion.div 
+            className="animated-subject"
+            animate={{
+              x: xPos,
+              y: yPos,
+              scale: 1 + (yPos / -60) * 0.2
+            }}
+            transition={{
+              duration: activeFrame === 0 ? 0 : 0.05,
+              ease: "linear"
+            }}
+            style={{ willChange: 'transform' }}
+          >
+            <div className="subject-core" style={{ background: color, boxShadow: `0 0 12px ${color}` }}></div>
+            <div className="subject-ring" style={{ borderColor: color }}></div>
+          </motion.div>
         </div>
         {!isResolved && (
           <div className="rendering-status">
@@ -249,26 +282,26 @@ function VideoGenerator({ color }) {
           </div>
         )}
       </div>
-      
+
       <div className="video-timeline">
         {Array.from({ length: totalFrames }).map((_, idx) => {
           const idxRatio = idx / (totalFrames - 1 || 1);
           const dotY = -Math.abs(Math.sin(idxRatio * Math.PI * 3)) * 10;
           return (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`timeline-frame ${activeFrame === idx ? 'active' : ''}`}
-              style={{ 
+              style={{
                 '--frame-color': color,
                 borderColor: activeFrame === idx ? color : 'rgba(255, 255, 255, 0.1)',
                 background: activeFrame === idx ? `${color}20` : 'transparent'
               }}
             >
               <div className="frame-inner" style={{ opacity: isResolved ? 1 : 0.2 }}>
-                 <div className="frame-dot" style={{ 
-                   transform: `translateY(${dotY}px)`,
-                   background: color 
-                 }}></div>
+                <div className="frame-dot" style={{
+                  transform: `translateY(${dotY}px)`,
+                  background: color
+                }}></div>
               </div>
             </div>
           );
@@ -322,10 +355,10 @@ function CodeGenerator({ color }) {
         <div className="code-content" style={{ '--theme-color': color }}>
           {codeLines.map((line, idx) => {
             if (idx > visibleLines) return null;
-            
+
             const isCurrentLine = idx === visibleLines;
             const textToShow = isCurrentLine ? line.substring(0, currentChars) : line;
-            
+
             return (
               <div key={idx} className="code-line">
                 <span className="line-number">{idx + 1}</span>
@@ -349,36 +382,227 @@ const MODALITY_ICONS = {
   video: <><path d="m22 8-6 4 6 4V8Z" /><rect width="14" height="12" x="2" y="6" rx="2" ry="2" /></>,
   code: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></>
 };
- 
- const handleCardTilt = (e) => {
-   const card = e.currentTarget;
-   const rect = card.getBoundingClientRect();
-   const x = e.clientX - rect.left;
-   const y = e.clientY - rect.top;
-   const centerX = rect.width / 2;
-   const centerY = rect.height / 2;
-   const rotateX = ((y - centerY) / centerY) * -10; // Max 10 degrees
-   const rotateY = ((x - centerX) / centerX) * 10; // Max 10 degrees
- 
-   gsap.to(card, {
-     rotateX: rotateX,
-     rotateY: rotateY,
-     scale: 1.02,
-     duration: 0.5,
-     ease: "power2.out"
-   });
- };
- 
- const resetCardTilt = (e) => {
-   const card = e.currentTarget;
-   gsap.to(card, {
-     rotateX: 0,
-     rotateY: 0,
-     scale: 1,
-     duration: 0.5,
-     ease: "power2.out"
-   });
- };
+
+const handleCardTilt = (e) => {
+  const card = e.currentTarget;
+  const rect = card.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+  const rotateX = ((y - centerY) / centerY) * -10; // Max 10 degrees
+  const rotateY = ((x - centerX) / centerX) * 10; // Max 10 degrees
+
+  gsap.to(card, {
+    rotateX: rotateX,
+    rotateY: rotateY,
+    scale: 1.02,
+    duration: 0.5,
+    ease: "power2.out",
+    force3D: true,
+    transformPerspective: 1000
+  });
+};
+
+const resetCardTilt = (e) => {
+  const card = e.currentTarget;
+  gsap.to(card, {
+    rotateX: 0,
+    rotateY: 0,
+    scale: 1,
+    duration: 0.5,
+    ease: "power2.out"
+  });
+};
+
+
+function ParticlesBackground() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId;
+    let particles = [];
+    const particleCount = 65;
+    const connectionDistance = 110;
+    const colors = ['#ffffff'];
+
+    let mouse = { x: null, y: null, radius: 160 };
+    let targetMoveX = 0;
+    let targetMoveY = 0;
+    let currentMoveX = 0;
+    let currentMoveY = 0;
+
+    const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialize particles
+    for (let i = 0; i < particleCount; i++) {
+      const radius = Math.random() * 1.2 + 0.6; // 0.6 to 1.8px
+      const normalizedRadius = (radius - 1) / 2; // 0 to 1
+      const depth = normalizedRadius * 2 - 1; // -1 (far background) to 1 (near foreground)
+
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        radius: radius,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: radius > 2 ? Math.random() * 0.4 + 0.4 : Math.random() * 0.3 + 0.2, // larger are brighter
+        parallaxX: depth * (depth > 0 ? 40 : 25), // foreground shifts up to +40px, background shifts up to -25px
+        parallaxY: depth * (depth > 0 ? 25 : 15)  // foreground shifts up to +25px, background shifts up to -15px
+      });
+    }
+
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      targetMoveX = (mouse.x - centerX) / centerX; // -1 to 1
+      targetMoveY = (mouse.y - centerY) / centerY; // -1 to 1
+    };
+
+    const handleMouseLeave = () => {
+      mouse.x = null;
+      mouse.y = null;
+      targetMoveX = 0;
+      targetMoveY = 0;
+    };
+
+    const parent = canvas.parentElement;
+    if (parent) {
+      parent.addEventListener('mousemove', handleMouseMove);
+      parent.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Butter-smooth interpolation (easing) for 3D parallax offsets
+      currentMoveX += (targetMoveX - currentMoveX) * 0.08;
+      currentMoveY += (targetMoveY - currentMoveY) * 0.08;
+
+      // Update & Draw Particles
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Boundary collision / wrap around
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        if (p.x < 0) p.x = 0;
+        if (p.x > canvas.width) p.x = canvas.width;
+        if (p.y < 0) p.y = 0;
+        if (p.y > canvas.height) p.y = canvas.height;
+
+        // Calculate parallax-adjusted drawing coordinates
+        p.drawX = p.x + currentMoveX * p.parallaxX;
+        p.drawY = p.y + currentMoveY * p.parallaxY;
+
+        ctx.beginPath();
+        ctx.arc(p.drawX, p.drawY, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+      }
+
+      // Draw Connection Lines
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < particles.length; i++) {
+        const p1 = particles[i];
+        for (let j = i + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+
+          // Draw connections using parallax-adjusted drawing positions
+          const dx = p1.drawX - p2.drawX;
+          const dy = p1.drawY - p2.drawY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < connectionDistance) {
+            const alpha = (1 - dist / connectionDistance) * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(p1.drawX, p1.drawY);
+            ctx.lineTo(p2.drawX, p2.drawY);
+            
+            const grad = ctx.createLinearGradient(p1.drawX, p1.drawY, p2.drawX, p2.drawY);
+            grad.addColorStop(0, p1.color);
+            grad.addColorStop(1, p2.color);
+            
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 0.8;
+            ctx.globalAlpha = alpha;
+            ctx.stroke();
+          }
+        }
+
+        // Draw connections to Mouse
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = p1.drawX - mouse.x;
+          const dy = p1.drawY - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < mouse.radius) {
+            const alpha = (1 - dist / mouse.radius) * 0.22;
+            ctx.beginPath();
+            ctx.moveTo(p1.drawX, p1.drawY);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = p1.color;
+            ctx.lineWidth = 0.9;
+            ctx.globalAlpha = alpha;
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resizeCanvas);
+      if (parent) {
+        parent.removeEventListener('mousemove', handleMouseMove);
+        parent.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="particles-canvas"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1
+      }}
+    />
+  );
+}
 
 
 function GenerativeAISection({ isLoaded }) {
@@ -404,12 +628,12 @@ function GenerativeAISection({ isLoaded }) {
       gsap.set(planetsRef.current, { scale: 0 });
       gsap.set(coreRef.current, { scale: 0 });
 
-      tl.to(coreRef.current, { 
-        scale: 1, 
-        autoAlpha: 1, 
-        duration: 0.5, 
+      tl.to(coreRef.current, {
+        scale: 1,
+        autoAlpha: 1,
+        duration: 0.5,
         ease: "back.out(2)",
-        force3D: true 
+        force3D: true
       })
         .to(planetsRef.current, {
           scale: 1,
@@ -419,12 +643,12 @@ function GenerativeAISection({ isLoaded }) {
           force3D: true,
           stagger: {
             each: 0.08,
-            onComplete: function() {
+            onComplete: function () {
               const el = this.targets()[0];
               const i = planetsRef.current.indexOf(el);
               const planet = planetsData[i];
               const pathEl = pathsRef.current[i];
-              
+
               if (el && pathEl) {
                 const orbit = gsap.to(el, {
                   motionPath: {
@@ -523,10 +747,13 @@ function GenerativeAISection({ isLoaded }) {
 
   return (
     <section className="gen-ai-section" id="generative-ai" ref={containerRef}>
+      <ParticlesBackground />
 
       <div className="gen-ai-header-bar">
-        <h2 className="gen-ai-label" data-reveal="up">Gen AI</h2>
-        <p className="gen-ai-subtext" data-reveal="up">Multi-modal neural synthesis across text, image, audio, video &amp; code</p>
+        <h2 className="gen-ai-label" data-reveal="up">GEN AI</h2>
+        <p className="gen-ai-subtext" data-reveal="up">
+          Multi-modal neural synthesis across<br />text, image, audio, video &amp; code
+        </p>
       </div>
 
       <div className="orbital-system">
@@ -541,35 +768,35 @@ function GenerativeAISection({ isLoaded }) {
 
 
           {planetsData.map((planet, i) => {
-             // Calculate rotated endpoints to ensure GSAP follows the tilted path correctly
-             const rad = (planet.angle * Math.PI) / 180;
-             const sinA = Math.sin(rad);
-             const cosA = Math.cos(rad);
-             
-             // Top point (relative to 600, 300)
-             const tx = 0;
-             const ty = -planet.ry;
-             const rx1 = 600 + (tx * cosA - ty * sinA);
-             const ry1 = 300 + (tx * sinA + ty * cosA);
-             
-             // Bottom point (relative to 600, 300)
-             const bx = 0;
-             const by = planet.ry;
-             const rx2 = 600 + (bx * cosA - by * sinA);
-             const ry2 = 300 + (bx * sinA + by * cosA);
+            // Calculate rotated endpoints to ensure GSAP follows the tilted path correctly
+            const rad = (planet.angle * Math.PI) / 180;
+            const sinA = Math.sin(rad);
+            const cosA = Math.cos(rad);
 
-             return (
+            // Top point (relative to 600, 300)
+            const tx = 0;
+            const ty = -planet.ry;
+            const rx1 = 600 + (tx * cosA - ty * sinA);
+            const ry1 = 300 + (tx * sinA + ty * cosA);
+
+            // Bottom point (relative to 600, 300)
+            const bx = 0;
+            const by = planet.ry;
+            const rx2 = 600 + (bx * cosA - by * sinA);
+            const ry2 = 300 + (bx * sinA + by * cosA);
+
+            return (
               <path
                 key={`orbit-${planet.id}`}
                 id={`orbit-${planet.id}`}
                 ref={el => pathsRef.current[i] = el}
                 d={`M ${rx1},${ry1} A ${planet.rx},${planet.ry} ${planet.angle} 1,0 ${rx2},${ry2} A ${planet.rx},${planet.ry} ${planet.angle} 1,0 ${rx1},${ry1}`}
                 className={`orbit-path ${hoveredModality === planet.id ? 'highlighted' : ''}`}
-                style={{ 
+                style={{
                   '--orbit-color': planet.color
                 }}
               />
-             );
+            );
           })}
         </svg>
 
@@ -587,11 +814,25 @@ function GenerativeAISection({ isLoaded }) {
             onMouseEnter={() => setHoveredModality(planet.id)}
             onMouseLeave={() => setHoveredModality(null)}
             onClick={() => handlePlanetClick(planet.id)}
-            style={{ 
+            style={{
               '--planet-color': planet.color
             }}
           >
-            <div className="planet-halo"></div>
+            {/* Framer Motion morph background anchor */}
+            <motion.div
+              className="planet-morph-bg"
+              layoutId={`planet-${planet.id}-bg`}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: '50%',
+                background: 'transparent',
+                pointerEvents: 'none'
+              }}
+            />
             <div className="planet-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 {MODALITY_ICONS[planet.id]}
@@ -602,69 +843,188 @@ function GenerativeAISection({ isLoaded }) {
         ))}
       </div>
 
-      <div className={`artifact-card-modal ${activeModality ? 'visible' : ''}`}>
-        <div className="artifact-card-backdrop" onClick={() => setActiveModality(null)}></div>
-        <div className="artifact-card glassmorphic" onMouseMove={handleCardTilt} onMouseLeave={resetCardTilt}>
-          <button className="close-btn" onClick={() => setActiveModality(null)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-          {activeModality && (
-            <div className="artifact-content">
-              <div className="artifact-header" style={{ color: planetsData.find(p => p.id === activeModality)?.color }}>
-                <h3>{planetsData.find(p => p.id === activeModality)?.name} Modality</h3>
+      <AnimatePresence>
+        {activeModality && (
+          <div className="artifact-card-modal-wrapper">
+            <motion.div 
+              className="artifact-card-backdrop" 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveModality(null)} 
+            />
+            <motion.div 
+              className="artifact-card-wrapper"
+              layoutId={`planet-${activeModality}-bg`}
+              transition={{ type: "spring", stiffness: 260, damping: 28 }}
+              style={{ '--planet-accent-color': planetsData.find(p => p.id === activeModality)?.color }}
+            >
+              <div className="artifact-card glassmorphic" onMouseMove={handleCardTilt} onMouseLeave={resetCardTilt}>
+                <button className="close-btn" onClick={() => setActiveModality(null)} aria-label="Close modal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                </button>
+                <div className="artifact-content">
+                  <div className="artifact-header" style={{ color: 'var(--planet-accent-color)' }}>
+                    <h3>{planetsData.find(p => p.id === activeModality)?.name} Modality</h3>
+                  </div>
+                  <div className="artifact-body">
+                    {getArtifactContent(activeModality)}
+                  </div>
+                </div>
               </div>
-              <div className="artifact-body">
-                {getArtifactContent(activeModality)}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
 
 export default function Home() {
   const containerRef = useRef(null);
-  const canvasRef = useRef(null);
   const parallaxWrapperRef = useRef(null);
+  const parallaxTimelineRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [activeFlowNode, setActiveFlowNode] = useState(null);
+  const [activeMLPill, setActiveMLPill] = useState(null);
+  const [isSystemLoading, setIsSystemLoading] = useState(false);
 
-  const handleMouseMove = (e) => {
-    // 1. Existing gradient logic for text
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      containerRef.current.style.setProperty('--x', `${e.clientX - rect.left}px`);
-      containerRef.current.style.setProperty('--y', `${e.clientY - rect.top}px`);
+  const scrollToSection = (e, targetId) => {
+    if (e) e.preventDefault();
+    
+    // 1. Purge any conflicting scrolls/tweens for exclusive control
+    gsap.killTweensOf(window);
+    
+    // 2. Initialize parameters for high-velocity snappy navigation
+    let scrollTarget = null;
+    let ease = "power2.out";
+    let duration = 0.55;
+
+    // 3. Close any active modal states to prevent UI layering conflicts
+    if (typeof setActiveMLPill === 'function') setActiveMLPill(null);
+
+    // 4. Determine high-precision scroll destination
+    if (parallaxTimelineRef.current && (targetId === 'machine-learning' || targetId === 'neural-networks')) {
+      // Pinned Timeline Navigation: target specific rendering labels
+      const label = targetId === 'machine-learning' ? "ml-revealed" : "nn-revealed";
+      scrollTarget = parallaxTimelineRef.current.scrollTrigger.labelToScroll(label);
+      
+      if (targetId === 'neural-networks') {
+        ease = "expo.out"; // Bypass "dead zones" in the scroll path
+        duration = 0.5;
+      }
+    } else {
+      // Standard Section Navigation
+      const target = document.getElementById(targetId);
+      if (target) {
+        scrollTarget = target;
+        if (targetId === 'generative-ai') {
+          ease = "expo.out";
+          duration = 0.6;
+        }
+      }
     }
 
-    // 2. New Mouse Parallax Logic
-    const { clientX, clientY } = e;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const moveX = (clientX - centerX) / centerX; // Range -1 to 1
-    const moveY = (clientY - centerY) / centerY; // Range -1 to 1
+    // 5. Execute smooth scroll with Exclusive Control
+    if (scrollTarget !== null) {
+      gsap.to(window, {
+        scrollTo: { y: scrollTarget, autoKill: false },
+        duration: duration,
+        ease: ease,
+        overwrite: true, // Tweens killing for exclusive control
+        onComplete: () => {
+          // 6. Verify "Fully Loaded" State: Force reveal classes for instant arrival perception
+          const section = document.getElementById(targetId);
+          if (section) {
+            section.querySelectorAll('[data-reveal]').forEach(el => {
+              el.classList.add('reveal-active');
+            });
+          }
+        }
+      });
+    }
+  };
 
-    // Foreground (Cyborg) moves slightly towards the mouse direction
-    gsap.to(".cyborg-near", {
-      x: moveX * 50,
-      y: moveY * 30,
-      duration: 0.5,
+  const handleCardTilt = (e) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -10;
+    const rotateY = ((x - centerX) / centerX) * 10;
+
+    gsap.to(card, {
+      rotateX: rotateX,
+      rotateY: rotateY,
+      transformPerspective: 1000,
+      duration: 0.3,
       ease: "power2.out"
     });
+  };
 
-    // Background (Blur) moves in the opposite direction for 3D depth
-    gsap.to(".bg-far", {
-      x: moveX * -30,
-      y: moveY * -20,
+  const resetCardTilt = (e) => {
+    const card = e.currentTarget;
+    gsap.to(card, {
+      rotateX: 0,
+      rotateY: 0,
+      transformPerspective: 1000,
       duration: 0.5,
       ease: "power2.out"
     });
   };
 
-  // Cinematic Entrance Animation (Emergence Effect)
+  // Pre-calculate rect to avoid layout thrashing on mouse move
+  const containerRect = useRef(null);
   useEffect(() => {
+    const updateRect = () => {
+      if (containerRef.current) containerRect.current = containerRef.current.getBoundingClientRect();
+    };
+    updateRect();
+    window.addEventListener('resize', updateRect);
+    return () => window.removeEventListener('resize', updateRect);
+  }, []);
+
+  const handleMouseMove = (e) => {
+    // 1. Existing gradient logic for text - Optimized with cached rect
+    if (containerRef.current && containerRect.current) {
+      const x = e.clientX - containerRect.current.left;
+      const y = e.clientY - containerRect.current.top;
+      
+      gsap.to(containerRef.current, {
+        "--x": `${x}px`,
+        "--y": `${y}px`,
+        duration: 0.2,
+        ease: "power2.out"
+      });
+    }
+
+    // 2. Mouse Parallax Logic - Fully Hardware Accelerated
+    const { clientX, clientY } = e;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const moveX = (clientX - centerX) / centerX;
+    const moveY = (clientY - centerY) / centerY;
+
+    gsap.to(".cyborg-near", {
+      x: moveX * 50,
+      y: moveY * 30,
+      duration: 1,
+      ease: "power2.out",
+      force3D: true
+    });
+
+    gsap.to(".bg-far", {
+      x: moveX * -30,
+      y: moveY * -20,
+      duration: 1,
+      ease: "power2.out",
+      force3D: true
+    });
+  };
+
+  useEffect(() => {
+    
     const entranceTl = gsap.timeline({
       defaults: { ease: "power3.out", duration: 3 }
     });
@@ -709,10 +1069,14 @@ export default function Home() {
     );
 
     // 4. Consolidate: Fade out the near layer to leave the crisp background
-    entranceTl.to(".cyborg-near", { opacity: 0, duration: 1 }, "-=0.5");
+    entranceTl.to(".cyborg-near", { 
+      opacity: 0, 
+      duration: 1,
+      force3D: true 
+    }, "-=0.5");
 
     return () => entranceTl.kill();
-  }, []);
+  }, [isSystemLoading]);
 
 
 
@@ -763,7 +1127,8 @@ export default function Home() {
             trigger: orb.closest('section'),
             start: "top bottom",
             end: "bottom top",
-            scrub: true
+            scrub: 1, // Increased scrub for smoother interpolation
+            force3D: true
           }
         });
       });
@@ -862,386 +1227,157 @@ export default function Home() {
       });
     }, { threshold: 0.1 });
 
-    const statsEl = document.querySelector('.ml-stats');
-    if (statsEl) statsObserver.observe(statsEl);
+    document.querySelectorAll('.ml-stats, .nn-stats-block-tl, .nn-metrics-block').forEach(el => statsObserver.observe(el));
     return () => statsObserver.disconnect();
   }, []);
 
-  // Neural Network Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animId;
-    const nodes = [];
-    const connections = [];
-    const layers = [4, 6, 8, 6, 4];
-    let isHovering = false;
-    let shapeIndex = 0;
-    let lastShapeSwitch = 0;
-    let angleX = 0;
-    let angleY = 0;
-    const shapes = ['cube', 'pyramid', 'rectangle', 'hexagon'];
 
-    // ─── Device Capability Detection (early, so draw() can reference it) ──
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-
-    const getTargetPos3D = (index, shape, size) => {
-      switch (shape) {
-        case 'cube': {
-          // 3x3x3 grid (27 nodes) + 1 center
-          if (index < 27) {
-            const ix = (index % 3) - 1;
-            const iy = (Math.floor(index / 3) % 3) - 1;
-            const iz = Math.floor(index / 9) - 1;
-            return { x: ix * (size * 0.4), y: iy * (size * 0.4), z: iz * (size * 0.4) };
-          }
-          return { x: 0, y: 0, z: 0 };
-        }
-        case 'pyramid': {
-          // Layered triangles: 1, 3, 6, 10, 8
-          if (index < 1) return { x: 0, y: -size * 0.5, z: 0 };
-          if (index < 4) {
-            const angle = ((index - 1) / 3) * Math.PI * 2;
-            return { x: Math.cos(angle) * (size * 0.2), y: -size * 0.2, z: Math.sin(angle) * (size * 0.2) };
-          }
-          if (index < 10) {
-            const angle = ((index - 4) / 6) * Math.PI * 2;
-            return { x: Math.cos(angle) * (size * 0.4), y: size * 0.1, z: Math.sin(angle) * (size * 0.4) };
-          }
-          if (index < 20) {
-            const angle = ((index - 10) / 10) * Math.PI * 2;
-            return { x: Math.cos(angle) * (size * 0.6), y: size * 0.4, z: Math.sin(angle) * (size * 0.6) };
-          }
-          const angle = ((index - 20) / 8) * Math.PI * 2;
-          return { x: Math.cos(angle) * (size * 0.4), y: size * 0.2, z: Math.sin(angle) * (size * 0.4) };
-        }
-        case 'rectangle': {
-          // 7x4 grid on a 3D plane with some thickness
-          const row = Math.floor(index / 7);
-          const col = index % 7;
-          const zDepth = (index % 2 === 0 ? 1 : -1) * (size * 0.1);
-          return {
-            x: (col / 6 - 0.5) * (size * 1.3),
-            y: (row / 3 - 0.5) * (size * 0.8),
-            z: zDepth
-          };
-        }
-        case 'hexagon': {
-          // Two hexagons (6+6) connected in Z-space + 16 internal nodes
-          if (index < 12) {
-            const side = Math.floor(index / 6);
-            const angle = (index % 6 / 6) * Math.PI * 2;
-            const z = (side === 0 ? 0.3 : -0.3) * size;
-            return { x: Math.cos(angle) * (size * 0.5), y: Math.sin(angle) * (size * 0.5), z };
-          } else {
-            const angle = ((index - 12) / 16) * Math.PI * 2;
-            const r = (size * 0.25);
-            return { x: Math.cos(angle) * r, y: Math.sin(angle) * r, z: 0 };
-          }
-        }
-        default: return { x: 0, y: 0, z: 0 };
-      }
-    };
-
-    const project3D = (x, y, z, cx, cy) => {
-      const fov = 500;
-      // Rotate around X and Y axes
-      const cosX = Math.cos(angleX);
-      const sinX = Math.sin(angleX);
-      const cosY = Math.cos(angleY);
-      const sinY = Math.sin(angleY);
-
-      // Rotate Y
-      let x1 = x * cosY - z * sinY;
-      let z1 = x * sinY + z * cosY;
-
-      // Rotate X
-      let y1 = y * cosX - z1 * sinX;
-      let z2 = y * sinX + z1 * cosX;
-
-      const scale = fov / (fov + z2);
-      return {
-        px: x1 * scale + cx,
-        py: y1 * scale + cy,
-        scale,
-        depth: z2
-      };
-    };
-
-    function resize() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      canvas.width = rect.width * window.devicePixelRatio;
-      canvas.height = rect.height * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-      buildNetwork(rect.width, rect.height);
-    }
-
-    function buildNetwork(w, h) {
-      nodes.length = 0;
-      connections.length = 0;
-      const layerSpacing = w / (layers.length + 1);
-      layers.forEach((count, li) => {
-        const x = layerSpacing * (li + 1) - w / 2; // Relative to center
-        const nodeSpacing = h / (count + 1);
-        for (let ni = 0; ni < count; ni++) {
-          const y = nodeSpacing * (ni + 1) - h / 2; // Relative to center
-          nodes.push({
-            x, y, z: 0,
-            ox: x, oy: y, oz: 0,
-            tx: x, ty: y, tz: 0,
-            layer: li,
-            radius: 4 + Math.random() * 3,
-            pulse: Math.random() * Math.PI * 2
-          });
-        }
-      });
-
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = 0; j < nodes.length; j++) {
-          if (nodes[j].layer === nodes[i].layer + 1) {
-            if (Math.random() > 0.3) {
-              connections.push({ from: i, to: j, progress: Math.random(), speed: 0.002 + Math.random() * 0.004 });
-            }
-          }
-        }
-      }
-    }
-
-    function draw(time) {
-      const w = canvas.width / window.devicePixelRatio;
-      const h = canvas.height / window.devicePixelRatio;
-      const size = Math.min(w, h) * 0.6;
-      ctx.clearRect(0, 0, w, h);
-
-      if (isHovering) {
-        angleX += 0.002;
-        angleY += 0.003;
-        // Auto-cycle shapes on desktop only; mobile waits for manual taps
-        if (!isTouchDevice && time - lastShapeSwitch > 1500) {
-          shapeIndex = (shapeIndex + 1) % shapes.length;
-          lastShapeSwitch = time;
-        }
-      } else {
-        angleX *= 0.95;
-        angleY *= 0.95;
-      }
-
-      nodes.forEach((node, i) => {
-        const target = isHovering
-          ? getTargetPos3D(i, shapes[shapeIndex], size)
-          : { x: node.ox, y: node.oy, z: 0 };
-
-        node.tx = target.x;
-        node.ty = target.y;
-        node.tz = target.z;
-
-        // Fluid 3D Lerp
-        node.x += (node.tx - node.x) * 0.08;
-        node.y += (node.ty - node.y) * 0.08;
-        node.z += (node.tz - node.z) * 0.08;
-      });
-
-      // Build projection data with O(1) index lookup
-      const projectedByIndex = new Array(nodes.length);
-      const projectedNodes = nodes.map((node, i) => {
-        const proj = {
-          ...node,
-          ...project3D(node.x, node.y, node.z, w / 2, h / 2),
-          originalIndex: i
-        };
-        projectedByIndex[i] = proj;
-        return proj;
-      });
-      projectedNodes.sort((a, b) => b.depth - a.depth);
-
-      const lineOpacity = isHovering ? 0.04 : 0.08;
-
-      connections.forEach(conn => {
-        const from = projectedByIndex[conn.from];
-        const to = projectedByIndex[conn.to];
-        if (!from || !to) return;
-
-        ctx.beginPath();
-        ctx.moveTo(from.px, from.py);
-        ctx.lineTo(to.px, to.py);
-        const opacity = lineOpacity * Math.min(from.scale, to.scale);
-        ctx.strokeStyle = `rgba(0, 243, 255, ${opacity})`;
-        ctx.lineWidth = 0.5 * Math.min(from.scale, to.scale);
-        ctx.stroke();
-
-        conn.progress += conn.speed;
-        if (conn.progress > 1) conn.progress = 0;
-        const px = from.px + (to.px - from.px) * conn.progress;
-        const py = from.py + (to.py - from.py) * conn.progress;
-        ctx.beginPath();
-        ctx.arc(px, py, 2 * from.scale, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 243, 255, ${0.6 * (1 - Math.abs(conn.progress - 0.5) * 2) * (isHovering ? 0.5 : 1) * from.scale})`;
-        ctx.fill();
-      });
-
-      projectedNodes.forEach(node => {
-        const glow = 0.5 + 0.5 * Math.sin(time * 0.002 + node.pulse);
-        const r = node.radius * node.scale;
-
-        ctx.beginPath();
-        ctx.arc(node.px, node.py, r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 243, 255, ${(0.1 + glow * 0.3) * node.scale})`;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(node.px, node.py, r * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 243, 255, ${(0.5 + glow * 0.5) * node.scale})`;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(node.px, node.py, r + 4 * glow * node.scale, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0, 243, 255, ${0.05 * glow * node.scale})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-
-      animId = requestAnimationFrame(draw);
-    }
-
-    const parent = canvas.parentElement;
-
-    // (isTouchDevice already detected at top of useEffect)
-
-    // ─── Desktop: Hover to Transform (unchanged) ──────────────────
-    const handleMouseEnter = () => {
-      isHovering = true;
-      shapeIndex = (shapeIndex + 1) % shapes.length;
-      lastShapeSwitch = performance.now();
-    };
-    const handleMouseLeave = () => { isHovering = false; };
-
-    // ─── Mobile: Tap to Transform ──────────────────────────────────
-    // Every tap advances to the next shape and keeps 3D rotation active.
-    // No toggle — once tapped, the canvas stays in "transformed" mode
-    // and each subsequent tap just cycles the shape forward.
-    const handleMobileTap = (e) => {
-      // Prevent ghost-click double-fire on touch devices
-      if (e.type === 'touchstart') e.preventDefault();
-
-      // Always keep hovering ON so rotation + shape rendering continues
-      isHovering = true;
-      // Advance to the next shape on every tap
-      shapeIndex = (shapeIndex + 1) % shapes.length;
-      lastShapeSwitch = performance.now();
-    };
-
-    // ─── Bind the correct handler set per device type ─────────────
-    if (parent) {
-      if (isTouchDevice) {
-        // Mobile path: use touchstart (primary) + click (fallback for
-        // devices that report coarse but still fire click events).
-        // touchstart fires first; preventDefault stops the click duplicate.
-        parent.addEventListener('touchstart', handleMobileTap, { passive: false });
-        parent.addEventListener('click', handleMobileTap);
-      } else {
-        // Desktop path: classic hover behaviour
-        parent.addEventListener('mouseenter', handleMouseEnter);
-        parent.addEventListener('mouseleave', handleMouseLeave);
-      }
-    }
-
-    // ─── Visibility Observer (start / pause animation) ────────────
-    const canvasObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          resize();
-          if (!animId) animId = requestAnimationFrame(draw);
-        } else {
-          cancelAnimationFrame(animId);
-          animId = null;
-          // Safety: reset hover state when canvas scrolls out of view
-          // so mobile doesn't get stuck in "hovering" mode.
-          if (isTouchDevice) isHovering = false;
-        }
-      });
-    }, { threshold: 0.1 });
-
-    if (canvas.parentElement) {
-      canvasObserver.observe(canvas.parentElement);
-    }
-
-    let resizeTimeout;
-    const handleResize = () => {
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        if (animId) resize();
-      }, 150);
-    };
-    window.addEventListener('resize', handleResize, { passive: true });
-
-    // ─── Cleanup ──────────────────────────────────────────────────
-    return () => {
-      canvasObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
-      if (parent) {
-        if (isTouchDevice) {
-          parent.removeEventListener('touchstart', handleMobileTap);
-          parent.removeEventListener('click', handleMobileTap);
-        } else {
-          parent.removeEventListener('mouseenter', handleMouseEnter);
-          parent.removeEventListener('mouseleave', handleMouseLeave);
-        }
-      }
-      if (animId) cancelAnimationFrame(animId);
-    };
-  }, []);
 
   // ML -> NN Parallax Scroll Transition
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (!parallaxWrapperRef.current) return;
-      
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: parallaxWrapperRef.current,
-          start: "top top", // Pin when the wrapper hits the top
-          end: "+=2000", // Scroll duration for this transition
+          start: "top top",
+          end: "+=1800", 
           pin: true,
-          scrub: 1,
+          scrub: 0.5,
           anticipatePin: 1
         },
         defaults: { force3D: true, ease: "none" }
       });
 
-      // 1. Initial states
-      // Hide ML individual elements for staggered entrance
-      gsap.set(".ml-engine-node, .ml-flow-node, .ml-flow-paths", { y: 150, autoAlpha: 0 });
-      // Hide entire NN container and its orbs to prevent overlap
-      gsap.set(".ml-visualization", { y: 150, autoAlpha: 0 });
+      parallaxTimelineRef.current = tl;
 
-      // 2. ML Entrance (Synchronized)
-      tl.to(".ml-flow-paths, .ml-engine-node, .ml-flow-node", { 
-        y: 0, 
-        autoAlpha: 1, 
-        duration: 1, 
-        ease: "power2.out" 
+      // 1. Initial states
+      gsap.set(".ml-reveal", { y: 40, autoAlpha: 0, filter: "blur(10px)", scale: 0.92 });
+      gsap.set(".nn-distributed", { autoAlpha: 0 });
+      gsap.set(".nn-background-wrapper", { y: 50, scale: 1.1 });
+      gsap.set(".nn-header-block", { x: -40, autoAlpha: 0 });
+      gsap.set(".nn-stats-block-tl", { y: -40, autoAlpha: 0 });
+      gsap.set(".nn-info-block", { x: 40, autoAlpha: 0 });
+      gsap.set(".nn-metrics-block", { y: 40, autoAlpha: 0 });
+      gsap.set([".nn-sub-dist", ".nn-divider-h", ".nn-desc-dist", ".nn-cap-tag"], { autoAlpha: 0, y: 20 });
+
+      // 2. ML Entrance (Staggered reveal)
+      tl.to(".ml-reveal", {
+        y: 0,
+        scale: 1,
+        autoAlpha: 1,
+        filter: "blur(0px)",
+        duration: 0.8,
+        ease: "back.out(1.7)",
+        stagger: 0.1
       }, 0);
 
       // Pause briefly for user to view ML section
-      tl.addLabel("ml-revealed").to({}, { duration: 0.8 });
+      tl.addLabel("ml-revealed").to({}, { duration: 0.4 });
 
       // 3. ML exits upward completely
       tl.to(".ml-container", {
         y: -150,
         autoAlpha: 0,
-        duration: 1.5,
-        ease: "power2.in"
-      }, "ml-revealed+=0.5");
+        duration: 0.4,
+        ease: "power2.out"
+      }, "ml-revealed");
 
-      // 4. NN enters upward AFTER ML has exited
-      tl.to(".ml-visualization", {
+      // 4. NN Distributed entries
+      tl.to(".nn-distributed", {
+        autoAlpha: 1,
+        duration: 0.4,
+      }, "ml-revealed+=0.4");
+
+      // Background immersion + Parallax
+      tl.to(".nn-background-wrapper", {
+        y: -100,
+        duration: 2.6, // Synced with the content reveal duration (from 8 down to 2.6)
+        ease: "none"
+      }, "ml-revealed");
+
+      tl.to(".nn-neural-web", {
+        autoAlpha: 0.25,
+        duration: 1.0,
+        ease: "power2.out"
+      }, "ml-revealed+=0.4");
+
+      tl.to(".nn-phi-spiral-large", {
+        autoAlpha: 0.12,
+        scale: 1,
+        duration: 1.2,
+        ease: "power2.out"
+      }, "ml-revealed+=0.4");
+
+      // Q1: Header
+      tl.to(".nn-header-block", {
+        x: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: "power2.out"
+      }, "ml-revealed+=0.4");
+
+      tl.to(".nn-h-line", {
         y: 0,
         autoAlpha: 1,
-        duration: 1.5,
+        stagger: 0.2,
+        duration: 0.6,
         ease: "power2.out"
-      }, ">+=0.2"); // ">+=0.2" means wait 0.2s after the previous animation finishes
-      
+      }, "<");
+
+      // Q2: Large Stat (Top Right)
+      tl.to(".nn-stats-block-tl", {
+        y: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: "power2.out"
+      }, "ml-revealed+=0.6");
+
+      // Q2: Large Stat (Top Right)
+      tl.to(".nn-stats-block-tl", {
+        y: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: "power2.out"
+      }, "ml-revealed+=0.6");
+
+      // Q3: Bottom Right Info
+      tl.to(".nn-info-block", {
+        x: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: "power2.out"
+      }, "ml-revealed+=0.8");
+
+      tl.to([".nn-sub-dist", ".nn-divider-h", ".nn-desc-dist", ".nn-cap-tag"], {
+        autoAlpha: 1,
+        y: 0,
+        stagger: 0.1,
+        duration: 0.6
+      }, "<");
+
+      // Q4: Metrics (Bottom Left)
+      tl.to(".nn-metrics-block", {
+        y: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: "power2.out"
+      }, "ml-revealed+=1.0");
+
+      // Q4: Metrics (Bottom Left)
+      tl.to(".nn-metrics-block", {
+        y: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: "power2.out"
+      }, "ml-revealed+=1.0");
+
+      tl.addLabel("nn-revealed");
+
+      // Final pause before unpinning
+      tl.to({}, { duration: 0.1 });
+
     }, parallaxWrapperRef);
 
     return () => ctx.revert();
@@ -1260,11 +1396,11 @@ export default function Home() {
 
           <div className="ui-layer">
             <header className="minimal-header">
-              <a href="#machine-learning">Machine Learning</a>
-              <a href="#neural-networks">Neural Networks</a>
-              <a href="#generative-ai">Generative AI</a>
-              <a href="#ai-robotics">AI in Robotics</a>
-              <a href="#future-of-ai">Future of AI</a>
+              <a href="#machine-learning" onClick={(e) => scrollToSection(e, 'machine-learning')}>Machine Learning</a>
+              <a href="#neural-networks" onClick={(e) => scrollToSection(e, 'neural-networks')}>Neural Networks</a>
+              <a href="#generative-ai" onClick={(e) => scrollToSection(e, 'generative-ai')}>Generative AI</a>
+              <a href="#ai-robotics" onClick={(e) => scrollToSection(e, 'ai-robotics')}>AI in Robotics</a>
+              <a href="#future-of-ai" onClick={(e) => scrollToSection(e, 'future-of-ai')}>Future of AI</a>
             </header>
 
             <div
@@ -1283,19 +1419,19 @@ export default function Home() {
               <div className="system-status">
                 <div className="status-dot"></div>
                 <div className="status-text">
-                <span className="status-label">System State</span>
-                <span className="status-value">Neural Engine Online</span>
-                <div className="rotating-text-wrapper">
-                  <div className="rotating-text">
-                    <span>Analyzing data...</span>
-                    <span>Generating ideas...</span>
-                    <span>Building intelligence...</span>
-                    <span>Transforming the future...</span>
-                    <span>Analyzing data...</span>
+                  <span className="status-label">System State</span>
+                  <span className="status-value">Neural Engine Online</span>
+                  <div className="rotating-text-wrapper">
+                    <div className="rotating-text">
+                      <span>Analyzing data...</span>
+                      <span>Generating ideas...</span>
+                      <span>Building intelligence...</span>
+                      <span>Transforming the future...</span>
+                      <span>Analyzing data...</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             </div>
           </div>
         </section>
@@ -1304,204 +1440,264 @@ export default function Home() {
           <div className="parallax-shared-bg"></div>
 
           <section className="ml-section parallax-section" id="machine-learning">
+            <motion.div
+              className="ml-bg-orb orb-1"
+              animate={{
+                x: [0, 80, -60, 40, -80, 0],
+                y: [0, -50, 70, -30, 50, 0],
+                scale: [1, 1.15, 0.9, 1.1, 0.95, 1],
+              }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+              className="ml-bg-orb orb-2"
+              animate={{
+                x: [0, -70, 50, -40, 60, 0],
+                y: [0, 60, -80, 40, -60, 0],
+                scale: [1, 0.9, 1.2, 0.85, 1.1, 1],
+              }}
+              transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+              className="ml-bg-orb orb-3"
+              animate={{
+                x: [0, 50, -90, 70, -50, 0],
+                y: [0, -70, 30, -60, 80, 0],
+                scale: [1, 1.1, 0.95, 1.2, 0.9, 1],
+              }}
+              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+            />
 
-          <div className="ml-container">
-            {/* === INTERACTIVE FLOWCHART ARCHITECTURE === */}
-            <div className="ml-flowchart" data-active-node={activeFlowNode || ''}>
-              {/* SVG Connection Paths */}
-              <svg className="ml-flow-paths" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
-                <defs>
-                  {/* Pulse gradients maintained for potential use */}
-                  <linearGradient id="pulse-grad-supervised" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="transparent" />
-                    <stop offset="45%" stopColor="transparent" />
-                    <stop offset="50%" stopColor="#00f3ff" />
-                    <stop offset="55%" stopColor="transparent" />
-                    <stop offset="100%" stopColor="transparent" />
-                  </linearGradient>
+            <div className="ml-container">
+              <div className="ml-statement">
+                <h2 className="ml-statement-heading ml-reveal">
+                  MACHINE<br />LEARNING
+                </h2>
+                <p className="ml-statement-subtext ml-reveal">
+                  Algorithms that learn. Systems that evolve.
+                </p>
 
-                  <linearGradient id="pulse-grad-unsupervised" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="transparent" />
-                    <stop offset="45%" stopColor="transparent" />
-                    <stop offset="50%" stopColor="#b56cff" />
-                    <stop offset="55%" stopColor="transparent" />
-                    <stop offset="100%" stopColor="transparent" />
-                  </linearGradient>
-
-                  <linearGradient id="pulse-grad-reinforcement" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="transparent" />
-                    <stop offset="45%" stopColor="transparent" />
-                    <stop offset="50%" stopColor="#ff006e" />
-                    <stop offset="55%" stopColor="transparent" />
-                    <stop offset="100%" stopColor="transparent" />
-                  </linearGradient>
-                </defs>
-
-                {/* Path: Center → Supervised (Top Right) */}
-                <path className="flow-line flow-line--supervised" d="M 255 300 C 450 300, 500 140, 672 140"
-                  stroke="rgba(0,243,255,0.12)" strokeWidth="2" fill="none" />
-                <circle className="flow-pulse flow-pulse--supervised" r="5" fill="#00f3ff"
-                  style={{ filter: 'drop-shadow(0 0 5px #00f3ff)' }} shapeRendering="optimizeSpeed">
-                  <animateMotion dur="3s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 140, 672 140" />
-                </circle>
-                <circle className="flow-pulse flow-pulse--supervised" r="3" fill="#00f3ff" opacity="0.5"
-                  style={{ filter: 'drop-shadow(0 0 3px #00f3ff)' }} shapeRendering="optimizeSpeed">
-                  <animateMotion dur="3s" begin="1.5s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 140, 672 140" />
-                </circle>
-
-                {/* Path: Center → Unsupervised (Center Right) */}
-                <path className="flow-line flow-line--unsupervised" d="M 255 300 C 450 300, 550 300, 672 300"
-                  stroke="rgba(181,108,255,0.12)" strokeWidth="2" fill="none" />
-                <circle className="flow-pulse flow-pulse--unsupervised" r="5" fill="#b56cff"
-                  style={{ filter: 'drop-shadow(0 0 5px #b56cff)' }} shapeRendering="optimizeSpeed">
-                  <animateMotion dur="2.8s" begin="0.4s" repeatCount="indefinite" path="M 255 300 C 450 300, 550 300, 672 300" />
-                </circle>
-                <circle className="flow-pulse flow-pulse--unsupervised" r="3" fill="#b56cff" opacity="0.5"
-                  style={{ filter: 'drop-shadow(0 0 3px #b56cff)' }} shapeRendering="optimizeSpeed">
-                  <animateMotion dur="2.8s" begin="1.8s" repeatCount="indefinite" path="M 255 300 C 450 300, 550 300, 672 300" />
-                </circle>
-
-                {/* Path: Center → Reinforcement (Bottom Right) */}
-                <path className="flow-line flow-line--reinforcement" d="M 255 300 C 450 300, 500 460, 672 460"
-                  stroke="rgba(255,0,110,0.12)" strokeWidth="2" fill="none" />
-                <circle className="flow-pulse flow-pulse--reinforcement" r="5" fill="#ff006e"
-                  style={{ filter: 'drop-shadow(0 0 5px #ff006e)' }} shapeRendering="optimizeSpeed">
-                  <animateMotion dur="3.2s" begin="0.8s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 460, 672 460" />
-                </circle>
-                <circle className="flow-pulse flow-pulse--reinforcement" r="3" fill="#ff006e" opacity="0.5"
-                  style={{ filter: 'drop-shadow(0 0 3px #ff006e)' }} shapeRendering="optimizeSpeed">
-                  <animateMotion dur="3.2s" begin="2.2s" repeatCount="indefinite" path="M 255 300 C 450 300, 500 460, 672 460" />
-                </circle>
-              </svg>
-
-              {/* === CENTRAL ENGINE NODE === */}
-              <div className="ml-engine-node"
-                style={{ '--engine-glow': activeFlowNode === 'supervised' ? '#00f3ff' : activeFlowNode === 'unsupervised' ? '#b56cff' : activeFlowNode === 'reinforcement' ? '#ff006e' : '#00f3ff' }}
-              >
-                <div className="ml-engine-icon">
-                  {/* Animated Brain/Processor SVG */}
-                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
-                      <animateTransform attributeName="transform" type="rotate" dur="20s" repeatCount="indefinite" from="0 24 24" to="360 24 24" />
-                    </circle>
-                    <circle cx="24" cy="24" r="12" stroke="currentColor" strokeWidth="1" opacity="0.5">
-                      <animateTransform attributeName="transform" type="rotate" dur="12s" repeatCount="indefinite" from="360 24 24" to="0 24 24" />
-                    </circle>
-                    {/* Neural core */}
-                    <circle cx="24" cy="24" r="4" fill="currentColor" opacity="0.8">
-                      <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
-                    </circle>
-                    {/* Synaptic connections */}
-                    <line x1="24" y1="6" x2="24" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                    <line x1="24" y1="34" x2="24" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                    <line x1="6" y1="24" x2="14" y2="24" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                    <line x1="34" y1="24" x2="42" y2="24" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                    <line x1="11.27" y1="11.27" x2="16.97" y2="16.97" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                    <line x1="31.03" y1="31.03" x2="36.73" y2="36.73" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                    <line x1="36.73" y1="11.27" x2="31.03" y2="16.97" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                    <line x1="16.97" y1="31.03" x2="11.27" y2="36.73" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                    {/* Outer pulse ring */}
-                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.15">
-                      <animate attributeName="r" values="18;22;18" dur="3s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.15;0.05;0.15" dur="3s" repeatCount="indefinite" />
-                    </circle>
-                  </svg>
-                </div>
-                <h3 className="ml-engine-label">MACHINE LEARNING ENGINE</h3>
-                <p className="ml-engine-sublabel">Core Intelligence Architecture</p>
-              </div>
-
-              {/* === SUB-CATEGORY NODES === */}
-              <div className="ml-flow-nodes">
-                {/* Supervised Learning */}
-                <div className="ml-flow-node ml-flow-node--supervised"
-                  onMouseEnter={() => setActiveFlowNode('supervised')}
-                  onMouseLeave={(e) => { setActiveFlowNode(null); resetCardTilt(e); }}
-                  onMouseMove={handleCardTilt}
-                  style={{ '--node-accent': '#00f3ff', '--node-accent-bg': 'rgba(0,243,255,0.06)', '--node-accent-border': 'rgba(0,243,255,0.2)' }}
-                >
-                  <div className="ml-flow-node-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
+                <div className="ml-statement-stats ml-stats ml-reveal">
+                  <div className="ml-statement-stat">
+                    <div className="ml-statement-stat-top">
+                      <span className="ml-statement-stat-value" data-count="175">0</span>
+                      <span className="ml-statement-stat-unit">B</span>
+                    </div>
+                    <span className="ml-statement-stat-label">Parameters</span>
                   </div>
-                  <div className="ml-flow-node-content">
-                    <span className="ml-flow-node-tag">CLASSIFICATION &bull; REGRESSION</span>
-                    <h4>SUPERVISED LEARNING</h4>
-                    <p>Pattern Matching & Labelled Data</p>
+                  <div className="ml-statement-stat">
+                    <div className="ml-statement-stat-top">
+                      <span className="ml-statement-stat-value" data-count="99.7">0</span>
+                      <span className="ml-statement-stat-unit">%</span>
+                    </div>
+                    <span className="ml-statement-stat-label">Accuracy</span>
                   </div>
-                  <div className="ml-flow-node-glow"></div>
+                  <div className="ml-statement-stat">
+                    <div className="ml-statement-stat-top">
+                      <span className="ml-statement-stat-value" data-count="50">0</span>
+                      <span className="ml-statement-stat-unit">ms</span>
+                    </div>
+                    <span className="ml-statement-stat-label">Inference</span>
+                  </div>
                 </div>
 
-                {/* Unsupervised Learning */}
-                <div className="ml-flow-node ml-flow-node--unsupervised"
-                  onMouseEnter={() => setActiveFlowNode('unsupervised')}
-                  onMouseLeave={(e) => { setActiveFlowNode(null); resetCardTilt(e); }}
-                  onMouseMove={handleCardTilt}
-                  style={{ '--node-accent': '#b56cff', '--node-accent-bg': 'rgba(181,108,255,0.06)', '--node-accent-border': 'rgba(181,108,255,0.2)' }}
-                >
-                  <div className="ml-flow-node-icon">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 1v4" /><path d="M12 19v4" /><path d="M4.22 4.22l2.83 2.83" /><path d="M16.95 16.95l2.83 2.83" /><path d="M1 12h4" /><path d="M19 12h4" /><path d="M4.22 19.78l2.83-2.83" /><path d="M16.95 7.05l2.83-2.83" /></svg>
-                  </div>
-                  <div className="ml-flow-node-content">
-                    <span className="ml-flow-node-tag">CLUSTERING &bull; DIMENSIONALITY</span>
-                    <h4>UNSUPERVISED LEARNING</h4>
-                    <p>Structure Discovery & Clustering</p>
-                  </div>
-                  <div className="ml-flow-node-glow"></div>
+                <div className="ml-pills ml-reveal">
+                  <button
+                    className={`ml-pill ${activeMLPill === 'supervised' ? 'active' : ''}`}
+                    onClick={() => setActiveMLPill(activeMLPill === 'supervised' ? null : 'supervised')}
+                    aria-expanded={activeMLPill === 'supervised'}
+                    style={{ '--pill-accent': '#00f3ff', '--pill-accent-bg': 'rgba(0,243,255,0.08)' }}
+                  >
+                    <motion.span className="ml-pill-bg" layoutId="supervised-bg" />
+                    <span className="ml-pill-inner">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+                      </svg>
+                      <span>Supervised</span>
+                    </span>
+                  </button>
+                  <button
+                    className={`ml-pill ${activeMLPill === 'unsupervised' ? 'active' : ''}`}
+                    onClick={() => setActiveMLPill(activeMLPill === 'unsupervised' ? null : 'unsupervised')}
+                    aria-expanded={activeMLPill === 'unsupervised'}
+                    style={{ '--pill-accent': '#b56cff', '--pill-accent-bg': 'rgba(181,108,255,0.08)' }}
+                  >
+                    <motion.span className="ml-pill-bg" layoutId="unsupervised-bg" />
+                    <span className="ml-pill-inner">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3" /><path d="M12 1v4" /><path d="M12 19v4" /><path d="M4.22 4.22l2.83 2.83" /><path d="M16.95 16.95l2.83 2.83" /><path d="M1 12h4" /><path d="M19 12h4" /><path d="M4.22 19.78l2.83-2.83" /><path d="M16.95 7.05l2.83-2.83" />
+                      </svg>
+                      <span>Unsupervised</span>
+                    </span>
+                  </button>
+                  <button
+                    className={`ml-pill ${activeMLPill === 'reinforcement' ? 'active' : ''}`}
+                    onClick={() => setActiveMLPill(activeMLPill === 'reinforcement' ? null : 'reinforcement')}
+                    aria-expanded={activeMLPill === 'reinforcement'}
+                    style={{ '--pill-accent': '#ff006e', '--pill-accent-bg': 'rgba(255,0,110,0.08)' }}
+                  >
+                    <motion.span className="ml-pill-bg" layoutId="reinforcement-bg" />
+                    <span className="ml-pill-inner">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" />
+                      </svg>
+                      <span>Reinforcement</span>
+                    </span>
+                  </button>
                 </div>
 
-                {/* Reinforcement Learning */}
-                <div className="ml-flow-node ml-flow-node--reinforcement"
-                  onMouseEnter={() => setActiveFlowNode('reinforcement')}
-                  onMouseLeave={(e) => { setActiveFlowNode(null); resetCardTilt(e); }}
-                  onMouseMove={handleCardTilt}
-                  style={{ '--node-accent': '#ff006e', '--node-accent-bg': 'rgba(255,0,110,0.06)', '--node-accent-border': 'rgba(255,0,110,0.2)' }}
-                >
-                  <div className="ml-flow-node-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></svg>
-                  </div>
-                  <div className="ml-flow-node-content">
-                    <span className="ml-flow-node-tag">AGENTS &bull; REWARDS</span>
-                    <h4>REINFORCEMENT LEARNING</h4>
-                    <p>Strategy Optimization & Rewards</p>
-                  </div>
-                  <div className="ml-flow-node-glow"></div>
-                </div>
+
               </div>
             </div>
-          </div>
           </section>
 
           <section className="nn-section parallax-section" id="neural-networks">
+            <div className="nn-distributed">
+              {/* Immersive Neural Web — Background filling */}
+              <div className="nn-background-wrapper">
+                <svg className="nn-neural-web" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice">
+                  <defs>
+                    <radialGradient id="node-glow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#00f3ff" stopOpacity="0.6" />
+                      <stop offset="100%" stopColor="#00f3ff" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+                  {/* Neural Path Connections — procedurally inspired connections */}
+                  <path d="M100,200 L300,150 L500,250 L700,200 L900,300" className="nn-path" />
+                  <path d="M50,400 L250,450 L450,400 L650,450 L850,400" className="nn-path" />
+                  <path d="M150,600 L350,550 L550,650 L750,600 L950,700" className="nn-path" />
+                  <path d="M200,100 L250,300 L200,500 L250,700 L200,900" className="nn-path" />
+                  <path d="M500,50 L550,250 L500,450 L550,650 L500,850" className="nn-path" />
+                  <path d="M800,100 L850,300 L800,500 L850,700 L800,900" className="nn-path" />
 
-          <div className="ml-visualization">
-            <div className="ml-viz-content stagger-root">
-              <div className="ml-viz-label">Real-time Processing</div>
-              <h3 className="ml-viz-title">Neural Network<br />Architecture</h3>
-              <p className="ml-viz-desc">Modern machine learning models process millions of data points through layers of interconnected neurons, each one refining the signal until clarity emerges from chaos.</p>
-              <div className="ml-stats stagger-root">
-                <div className="ml-stat">
-                  <span className="ml-stat-value" data-count="175">0</span>
-                  <span className="ml-stat-label">Billion Parameters</span>
-                </div>
-                <div className="ml-stat">
-                  <span className="ml-stat-value" data-count="99.7">0</span>
-                  <span className="ml-stat-label">% Accuracy</span>
-                </div>
-                <div className="ml-stat">
-                  <span className="ml-stat-value" data-count="50">0</span>
-                  <span className="ml-stat-label">ms Inference</span>
+                  {/* Neural Nodes — scattered active points */}
+                  <circle cx="100" cy="200" r="3" fill="url(#node-glow)" className="nn-node pulse-1" />
+                  <circle cx="300" cy="150" r="2.5" fill="url(#node-glow)" className="nn-node pulse-2" />
+                  <circle cx="500" cy="250" r="4" fill="url(#node-glow)" className="nn-node pulse-3" />
+                  <circle cx="700" cy="200" r="2.5" fill="url(#node-glow)" className="nn-node pulse-1" />
+                  <circle cx="900" cy="300" r="3" fill="url(#node-glow)" className="nn-node pulse-2" />
+                  <circle cx="250" cy="450" r="3.5" fill="url(#node-glow)" className="nn-node pulse-3" />
+                  <circle cx="650" cy="450" r="3" fill="url(#node-glow)" className="nn-node pulse-1" />
+                  <circle cx="550" cy="650" r="4" fill="url(#node-glow)" className="nn-node pulse-2" />
+                  <circle cx="850" cy="700" r="3" fill="url(#node-glow)" className="nn-node pulse-3" />
+                </svg>
+
+                <svg className="nn-phi-spiral-large" viewBox="0 0 800 500" fill="none">
+                  <path d="M 494 494 A 494 494 0 0 1 0 0" stroke="rgba(0,243,255,0.15)" strokeWidth="0.5" fill="none" />
+                  <path d="M 494 0 A 306 306 0 0 1 800 306" stroke="rgba(181,108,255,0.1)" strokeWidth="0.5" fill="none" />
+                </svg>
+              </div>
+
+              <div className="nn-ambient-glow-distributed"></div>
+
+              {/* Quadrant 1: The Identity (Top Left) */}
+              <div className="nn-block nn-header-block">
+                <div className="nn-accent-line-v"></div>
+                <h2 className="nn-headline-dist">
+                  <span className="nn-h-line">NEURAL</span>
+                  <span className="nn-h-line">NETWORKS</span>
+                </h2>
+                <div className="nn-phi-label">STRUCTURE φ 1.618</div>
+              </div>
+
+              {/* Quadrant 2: The Core Stats (Top Right) */}
+              <div className="nn-block nn-stats-block-tl">
+                <div className="nn-stat-v">
+                  <span className="nn-sv-val" data-count="350">0</span>
+                  <span className="nn-sv-unit">GB</span>
+                  <span className="nn-sv-label">MODEL SIZE</span>
                 </div>
               </div>
+
+              {/* Quadrant 3: The Narrative (Bottom Right) */}
+              <div className="nn-block nn-info-block">
+                <p className="nn-sub-dist">Every connection, a decision. Every layer, a refinement.</p>
+                <div className="nn-divider-h"></div>
+                <p className="nn-desc-dist">
+                  Inspired by biological architecture, our networks are layered systems of
+                  interconnected nodes that transform raw data into deep understanding.
+                  Signal propagation through 8.6B parameters achieves state-of-the-art
+                  pattern recognition.
+                </p>
+                <div className="nn-caps-dist">
+                  <span className="nn-cap-tag">Transformer</span>
+                  <span className="nn-cap-tag">Attention</span>
+                  <span className="nn-cap-tag">Gradient</span>
+                </div>
+              </div>
+
+              {/* Quadrant 4: Secondary Metrics (Bottom Left) */}
+              <div className="nn-block nn-metrics-block">
+                <div className="nn-mini-stat">
+                  <span className="nn-ms-val" data-count="500">0</span><span className="nn-ms-unit">K</span>
+                  <span className="nn-ms-label">EPOCHS</span>
+                </div>
+                <div className="nn-mini-stat">
+                  <span className="nn-ms-val" data-count="8.6">0</span><span className="nn-ms-unit">B</span>
+                  <span className="nn-ms-label">NEURONS</span>
+                </div>
+              </div>
+
             </div>
-            <div className="ml-neural-canvas">
-              <canvas id="neural-net-canvas" ref={canvasRef}></canvas>
-            </div>
-          </div>
-        </section>
+          </section>
         </div>
 
         <GenerativeAISection isLoaded={true} />
+        
+        <AnimatePresence>
+          {activeMLPill && (
+            <div className="ml-modal-overlay">
+              <motion.div 
+                className="ml-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setActiveMLPill(null)}
+              />
+              <motion.div 
+                className="ml-modal-card-wrapper"
+                layoutId={`${activeMLPill}-bg`}
+                transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                style={{ '--expand-accent': activeMLPill === 'supervised' ? '#00f3ff' : activeMLPill === 'unsupervised' ? '#b56cff' : '#ff006e' }}
+              >
+                <div 
+                  className="ml-modal-card"
+                  onMouseMove={handleCardTilt}
+                  onMouseLeave={resetCardTilt}
+                >
+                  <button className="ml-expansion-close" onClick={() => setActiveMLPill(null)} aria-label="Close details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                  <div className="ml-expansion-content">
+                    <span className="ml-expansion-tag">
+                      {activeMLPill === 'supervised' && 'CLASSIFICATION \u2022 REGRESSION'}
+                      {activeMLPill === 'unsupervised' && 'CLUSTERING \u2022 DIMENSIONALITY'}
+                      {activeMLPill === 'reinforcement' && 'AGENTS \u2022 REWARDS'}
+                    </span>
+                    <h4 className="ml-expansion-title">
+                      {activeMLPill === 'supervised' && 'Supervised Learning'}
+                      {activeMLPill === 'unsupervised' && 'Unsupervised Learning'}
+                      {activeMLPill === 'reinforcement' && 'Reinforcement Learning'}
+                    </h4>
+                    <div className="ml-expansion-desc">
+                      <Typewriter
+                        text={
+                          activeMLPill === 'supervised'
+                            ? 'Trained on labeled datasets, supervised learning maps inputs to known outputs. From predicting stock prices to classifying medical images \u2014 it finds the pattern in the noise.'
+                            : activeMLPill === 'unsupervised'
+                              ? 'No labels, no guidance. Unsupervised learning discovers hidden structure in raw data \u2014 grouping galaxies by shape, segmenting customers by behavior, finding order in chaos.'
+                              : 'An agent learns by doing. Through trial, error, and reward signals, reinforcement learning masters complex strategies \u2014 from playing Go to controlling robotic arms.'
+                        }
+                        speed={20}
+                        key={activeMLPill}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </main>
     </>
   );

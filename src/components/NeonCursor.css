@@ -1,0 +1,71 @@
+:root {
+  --cursor-primary: #00f3ff;
+  --cursor-secondary: #b026ff;
+  --cursor-glow: rgba(0, 243, 255, 0.5);
+}
+
+.neon-cursor-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+.cursor-main {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--cursor-primary);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 10px var(--cursor-primary),
+    0 0 20px var(--cursor-primary),
+    0 0 30px var(--cursor-primary);
+  z-index: 3;
+}
+
+.cursor-trail {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--cursor-primary);
+  z-index: 2;
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+
+.cursor-glow {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(
+    circle, 
+    var(--cursor-glow) 0%, 
+    rgba(0, 243, 255, 0.1) 40%, 
+    rgba(0, 243, 255, 0) 70%
+  );
+  border-radius: 50%;
+  filter: blur(10px);
+  z-index: 1;
+}
+
+/* Ensure default cursor is hidden on body when custom cursor is active */
+@media (pointer: fine) {
+  body, a, button, input, [role="button"] {
+    cursor: none !important;
+  }
+}
+
+/* Re-enable cursor for touch devices where custom cursor might not work well */
+@media (pointer: coarse) {
+  .neon-cursor-container {
+    display: none;
+  }
+  body {
+    cursor: auto !important;
+  }
+}

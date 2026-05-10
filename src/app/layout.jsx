@@ -47,6 +47,9 @@ export const metadata = {
   description: "Showcasing the future of AI and web design",
 };
 
+import NeonCursor from '../components/NeonCursor';
+import SmoothScroll from '../components/SmoothScroll';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${jersey25.variable} ${quantico.variable} ${anta.variable} ${aldrich.variable} ${spaceGrotesk.variable} ${michroma.variable} ${outfit.variable}`}>
@@ -57,7 +60,12 @@ export default function RootLayout({ children }) {
           strategy="beforeInteractive"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <SmoothScroll>
+          <NeonCursor />
+          {children}
+        </SmoothScroll>
+      </body>
     </html>
   );
 }
